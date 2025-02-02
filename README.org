@@ -1,0 +1,88 @@
+* ParaCl :: C-like interpreter
+
+Currently under construction. Don't expect anything to work.
+Example program in the ParaCl language to give you a taste (but just a taste, remember nothing works yet):
+
+#+begin_src c
+int main() {
+    int x;
+    if (x == 4) {
+        print(5);
+        x += 4;
+    }
+
+    if (x <= 8) {
+        print(7);
+        x += 4;
+    }
+}
+#+end_src
+
+** Building
+
+*** With nix
+
+If you are using nixos or nix package manager in general --- you are in luck, this package provides convenient flake that should take care of building and running this project properly.
+#+begin_src shell
+  nix run github:alexpaniman/paracl --impure
+#+end_src shell
+
+Should also be noted that you can install and use nix everywhere, not just on nixos, so running script from https://nixos.org/download/ might be a good and simple option to run this project.
+
+
+*** Traditional
+
+Project has no dependencies as of now, except libstdc++, which is a given. But currently only build with clang. If you have it, you should be good to go.
+
+This may or may not work on ~Windows~ or ~MacOS~, but hasn't been tested yet on either.
+
+**** Prerequisites
+You need to have:
+
++ ~Clang~
++ ~CMake~
+
+installed on your system.
+
+On ~Arch Linux~ you can install all of them with:
+#+begin_src shell
+  pacman -Sy --needed cmake clang # And, optionally, ninja and mold
+#+end_src
+
+On ~Ubuntu~ you can install them with:
+
+#+begin_src shell
+  sudo apt-get install -y cmake clang # And, optionally, ninja-build and mold
+#+end_src
+
+If you are using other distros, use your package manager to look up package names, and install them. Also, beware that this project requires 18+ clang, so if the build fails, try updating your toolchain.
+
+
+**** Building
+*Clone this repository:*
+
+#+begin_src shell
+  git clone git@github.com:alexpaniman/paracl.git
+#+end_src
+
+*Configure:*
+
+#+begin_src shell
+cmake -B build -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release
+# If you installed ninja, also add "-G Ninja" flag
+# If you installed mold,  also add "-DCMAKE_LINKER_TYPE=MOLD" flag
+# If you want to develop, generate compile_commands.json with "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+# If you are using ninja and getting colorless output use "-DFORCE_COLORED_OUTPUT=ON"
+#+end_src
+
+*Build:*
+
+#+begin_src shell
+cmake --build build -j$(nproc)
+# -j$(nproc) is unnecessary when using ninja as it's the default
+#+end_src
+
+If wish to tell you how to install it and run. But there is nothing yet to install! The best I can offer is running tests:
+#+begin_src shell
+cmake --build build --target check
+#+end_src
