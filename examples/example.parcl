@@ -1,12 +1,12 @@
-int main() {
-    int x;
-    if (x == 4) {
-        print(5);
-        x += 4;
-    }
+max_border = ?;
+res        = 1;
+cur_it     = 1;
 
-    if (x <= 8) {
-        print(7);
-        x += 4;
-    }
+while (cur_it <= max_border) {
+
+    res    *= cur_it;
+    cur_it += 1;
+
 }
+
+print(res);
