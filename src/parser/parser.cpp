@@ -17,22 +17,86 @@ token parser::eat_token() {
     return current_token;
 }
 
-token parser::current_token() {
+token parser::current_token() const {
     if (current_token_num_ >= tokens_.size()) {
         //добавить обработку ошибки
     }
     return tokens_[current_token_num_];
 }
 
-token parser::next_token() {
+token parser::next_token() const {
     if (current_token_num_ + 1 >= tokens_.size()) {
         //добавить обработку ошибки
     }
     return tokens_[current_token_num_ + 1];
 }
 
+int parser::get_operator_precedence(token_type type) const {
+    switch (type) {
+        case token_type::PLUS:
+        case token_type::MINUS:
+            return 1;
+        case token_type::MULTIPLY:
+        case token_type::DIVIDE:
+            return 2;
+        default:
+            return 0; //обработку
+    }
+}
+
+std::unique_ptr<node> parser::parse_expression(int min_precedence) {
+    std::unique_ptr<node> left = parse_id_or_num();
+
+    while (current_token().type != token_type::RIGHT_PARENTHESIS &&
+           current_token().type != token_type::SEMICOLON) {
+        token current = current_token();
+        int precedence = get_operator_precedence(current.type);
+
+        if (precedence < min_precedence) {
+            return left;
+        }
+
+        eat_token();
+        std::unique_ptr<node> right = parse_expression(precedence + 1);
+
+        switch (current.type) {
+            case token_type::PLUS:
+                left = std::make_unique<plus_node>(std::move(left), std::move(right));
+                break;
+            case token_type::MINUS:
+                left = std::make_unique<minus_node>(std::move(left), std::move(right));
+                break;
+            case token_type::MULTIPLY:
+                left = std::make_unique<multiply_node>(std::move(left), std::move(right));
+                break;
+            case token_type::DIVIDE:
+                left = std::make_unique<divide_node>(std::move(left), std::move(right));
+                break;
+            default:
+                // добавить обработку ошибки
+                return nullptr;
+        }
+    }
+    return left;
+}
+
 std::unique_ptr<node> parser::parse_id_or_num(bool create_variable) {
     token current_token = eat_token();
+
+    if (current_token.type == token_type::LEFT_PARENTHESIS) {
+        std::unique_ptr<node> expr = parse_expression(0);
+        if (eat_token().type != token_type::RIGHT_PARENTHESIS) {
+            // добавить обработку ошибки
+        }
+        return expr;
+    }
+
+    bool is_neg = false;
+    if(current_token.type == token_type::MINUS) {
+        is_neg = true;
+        current_token = eat_token();
+    }
+
     switch(current_token.type) {
         case token_type::ID: {
             std::string id_name{current_token.id.data(), current_token.id.size()};
@@ -42,12 +106,26 @@ std::unique_ptr<node> parser::parse_id_or_num(bool create_variable) {
             }
 
             context_.create_variable(id_name);
-            return std::make_unique<id_node>(id_name);
+            std::unique_ptr<node> new_id_node = std::make_unique<id_node>(id_name);
+            if (is_neg) {
+                return std::make_unique<negate_node>(std::move(new_id_node));
+            }
+            return new_id_node;
         }
-        case token_type::NUMBER:
-            return std::make_unique<number_node>(current_token.number);
-        case token_type::SCAN:
-            return std::make_unique<Scan>();
+        case token_type::NUMBER: {
+            std::unique_ptr<node> new_num_node = std::make_unique<number_node>(current_token.number);
+            if (is_neg) {
+                return std::make_unique<negate_node>(std::move(new_num_node));
+            }
+            return new_num_node;
+        }
+        case token_type::SCAN: {
+            std::unique_ptr<node> new_scan_node = std::make_unique<scan_node>();
+            if (is_neg) {
+                return std::make_unique<negate_node>(std::move(new_scan_node));
+            }
+            return new_scan_node;
+        }
         default:
             return nullptr; //добавить обработку ошибки
     }
@@ -63,32 +141,16 @@ std::unique_ptr<node> parser::parse_function() {
     eat_token();
     std::vector<std::unique_ptr<node>> args;
     while (current_token().type != token_type::RIGHT_PARENTHESIS) {
-        args.push_back(parse_id_or_num(false));
+        args.push_back(parse_expression(0));
 
         //надо будет добавить запятую
         //if (eat_token().type !=token_type::COMMA)
     }
     eat_token();
-
-    if (eat_token().type != token_type::SEMICOLON) {
-        //добавить обработку ошибки
-    }
-
     return std::make_unique<function_node>(function_name, std::move(args));
 }
 
-std::unique_ptr<node> parser::parse_arithmetic_op() {
-    switch(next_token().type) {
-        case token_type::PLUS:      return parse_binary_operation<plus_node>();
-        case token_type::MINUS:     return parse_binary_operation<minus_node>();
-        case token_type::MULTIPLY:  return parse_binary_operation<multiply_node>();
-        case token_type::DIVIDE:    return parse_binary_operation<divide_node>();
-        case token_type::SEMICOLON: return parse_id_or_num(false);
-        default:                    return nullptr; //добавить обработку ошибки
-    }
-}
-
-std::unique_ptr<node> parser::parse_comparison_op() {
+std::unique_ptr<node> parser::parse_comparison_operation() {
     switch(next_token().type) {
         case token_type::EQUAL:           return parse_binary_operation<equal_node>();
         case token_type::LESS:            return parse_binary_operation<less_node>();
@@ -99,13 +161,16 @@ std::unique_ptr<node> parser::parse_comparison_op() {
     }
 }
 
-std::unique_ptr<node> parser::parse_expression() {
+std::unique_ptr<node> parser::parse_assing_operation() {
+    if (current_token().type != token_type::ID) {
+        //добавить обработку ошибки
+    }
     switch(next_token().type) {
-        case token_type::ASSIGN:           return parse_assing_operation<assign_node>();
-        case token_type::PLUS_ASSIGN:      return parse_assing_operation<plus_assign_node>();
-        case token_type::MINUS_ASSIGN:     return parse_assing_operation<minus_assign_node>();
-        case token_type::MULTIPLY_ASSIGN:  return parse_assing_operation<multiply_assign_node>();
-        case token_type::DIVIDE_ASSIGN:    return parse_assing_operation<divide_assign_node>();
+        case token_type::ASSIGN:           return parse_binary_operation<assign_node>(true);
+        case token_type::PLUS_ASSIGN:      return parse_binary_operation<plus_assign_node>(true);
+        case token_type::MINUS_ASSIGN:     return parse_binary_operation<minus_assign_node>(true);
+        case token_type::MULTIPLY_ASSIGN:  return parse_binary_operation<multiply_assign_node>(true);
+        case token_type::DIVIDE_ASSIGN:    return parse_binary_operation<divide_assign_node>(true);
         case token_type::LEFT_PARENTHESIS: return parse_function();
         default:                           return nullptr;  //добавить обработку ошибки
     }
@@ -115,7 +180,7 @@ std::unique_ptr<node> parser::parse_condition() {
     if (eat_token().type != token_type::LEFT_PARENTHESIS) {
         //добавить обработку ошибки
     }
-    std::unique_ptr<node> condition = parse_comparison_op();
+    std::unique_ptr<node> condition = parse_comparison_operation();
     if (eat_token().type != token_type::RIGHT_PARENTHESIS) {
         //добавить обработку ошибки
     }
@@ -128,7 +193,10 @@ std::vector<std::unique_ptr<node>> parser::parse_scope() {
            && current_token().type != token_type::RIGHT_CURLY_BRACKET) {
         switch(current_token().type) {
             case token_type::ID:
-                scope.push_back(parse_expression());
+                scope.push_back(parse_assing_operation());
+                if (eat_token().type != token_type::SEMICOLON) {
+                    //добавить обработку ошибки
+                }
                 break;
 
             case token_type::WHILE:

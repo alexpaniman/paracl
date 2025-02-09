@@ -15,25 +15,25 @@ enum encoding_flag {
     POINTER = 0b1,
 };
 
-inline uint64_t create_pointer(uint64_t *value) {
-    return reinterpret_cast<uint64_t>(value) | POINTER;
+inline int64_t create_pointer(int64_t *value) {
+    return reinterpret_cast<int64_t>(value) | POINTER;
 }
 
-inline uint64_t create_value(uint64_t value) {
+inline int64_t create_value(int64_t value) {
     return ((value << 1) | VALUE);
 }
 
-inline uint64_t *get_pointer(uint64_t value) {
+inline int64_t *get_pointer(int64_t value) {
     if ((value & 0b1) == VALUE) {
         //обработка
     }
 
-    return reinterpret_cast<uint64_t*>(value & ~POINTER);
+    return reinterpret_cast<int64_t*>(value & ~POINTER);
 }
 
-inline uint64_t get_value(uint64_t value) {
+inline int64_t get_value(int64_t value) {
     if ((value & 0b1) == POINTER) {
-        return *(reinterpret_cast<uint64_t*>(value & ~POINTER));
+        return *(reinterpret_cast<int64_t*>(value & ~POINTER));
     }
 
     return (value >> 1);

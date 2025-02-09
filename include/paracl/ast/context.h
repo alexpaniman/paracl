@@ -19,7 +19,7 @@ public:
         return false;
     }
 
-    uint64_t *get_variable(std::string &name) {
+    int64_t *get_variable(std::string &name) {
         if (variables_.find(name) == variables_.end()) {
             //обработка
         }
@@ -27,7 +27,7 @@ public:
     }
 
 private:
-    std::unordered_map<std::string, uint64_t> variables_{};
+    std::unordered_map<std::string, int64_t> variables_{};
 };
 
 } // end namespace paracl
