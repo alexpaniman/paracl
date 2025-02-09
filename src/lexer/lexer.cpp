@@ -85,8 +85,8 @@ void display_tokens(file source, message_type type, std::string annotation, std:
     std::sort(locations.begin(), locations.end());
 
     std::cout << source.filename
-        << ":" << tokens[0].range.x0.line
-        << ":" << tokens[tokens.size() - 1].range.x1.line
+        << ":" << locations[0].begin.line
+        << ":" << locations[0].begin.column
         << " ";
 
     switch (type) {

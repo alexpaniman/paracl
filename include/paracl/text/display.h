@@ -2,39 +2,76 @@
 
 #include <string>
 #include <vector>
-#include <cstdint>
 #include <span>
+#include <cassert>
 
 
 namespace paracl {
 
 struct text_position {
-    uint32_t point;
-    uint32_t line, column;
+    size_t point;
+    size_t line, column;
+
+    text_position(size_t point, size_t line, size_t column):
+        point(point),
+        line(line),
+        column(column) {
+
+        assert(point >= (line - 1) + column);
+    }
 
     auto operator<=>(const text_position &other) const {
         return point <=> other.point;
     }
-};
 
-struct text_range {
-    text_position x0, x1;
+    static text_position from_point(std::span<char> text, int32_t point) {
+        assert(point >= 0);
+        assert(!text.empty());
 
-    auto operator<=>(const text_range &other) const {
-        return x0 <=> other.x0;
+        int32_t saved_point = point;
+
+        int32_t column = 0;
+        if (text[point] == '\n' && point > 0)
+            ++ column;
+
+        while (text[point] != '\n' && point > 0)
+            ++ column;
+
+        if (point != 0)
+            -- column;
+
+        point -= column;
+
+        int32_t line = 1;
+        for (; point >= 0; -- point)
+            if (text[point] == '\n')
+                ++ line;
+
+        return text_position(saved_point, line, column);
     }
 };
 
-struct file_position {
-    std::string filename;
-    text_position position;
-};
+struct text_range {
+    text_position begin, end;
 
-struct file_range {
-    std::string filename;
-    text_range range;
-};
+    text_range(text_position begin, text_position end):
+        begin(begin),
+        end(end) {
 
+        assert(begin.point <= end.point);
+    }
+
+    text_range(std::span<char> text, int32_t begin_point, int32_t end_point):
+        begin(text_position::from_point(text, begin_point)),
+        end(text_position::from_point(text, end_point)) {
+
+        assert(begin_point <= end_point);
+    }
+
+    auto operator<=>(const text_range &other) const {
+        return begin <=> other.begin;
+    }
+};
 
 struct file {
     std::string filename;

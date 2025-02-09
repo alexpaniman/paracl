@@ -14,16 +14,11 @@ void print_range(std::span<char> text, std::vector<text_range> ranges) {
     assert(!ranges.empty());
     std::sort(ranges.begin(), ranges.end());
 
-    // compute the beginning of the first line:
-    int32_t i = ranges[0].x0.point;
-    while (text[i] != '\n' && i > 0)
-        -- i;
+    // compute the beginning line:
+    int32_t i = ranges[0].begin.point - ranges[0].begin.column;
 
-    if (i != 0)
-        ++ i;
-
-    int32_t line_from = ranges[0].x0.line;
-    int32_t line_to   = ranges[ranges.size() - 1].x1.line - (ranges[ranges.size() - 1].x1.column == 0 ? 1 : 0);
+    int32_t line_from = ranges[0].begin.line;
+    int32_t line_to   = ranges[ranges.size() - 1].end.line - (ranges[ranges.size() - 1].end.column == 0 ? 1 : 0);
 
     for (int32_t line = line_from; line <= line_to; ++ line) {
         std::cout << std::setw(5) << line << " | ";
@@ -61,13 +56,13 @@ void print_range(std::span<char> text, std::vector<text_range> ranges) {
             bool beginning = false;
             bool inside = false;
             for (uint32_t current_range = 0; current_range < ranges.size(); ++ current_range) {
-                if (i <  (int32_t) ranges[current_range].x0.point)
+                if (i <  (int32_t) ranges[current_range].begin.point)
                     ;
                 else
-                if (i == (int32_t) ranges[current_range].x0.point)
+                if (i == (int32_t) ranges[current_range].begin.point)
                     inside = beginning = true;
                 else
-                if (i <  (int32_t) ranges[current_range].x1.point)
+                if (i <  (int32_t) ranges[current_range].end.point)
                     inside = true;
             }
 
