@@ -1,17 +1,28 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <cstdint>
+#include <span>
 
 
 namespace paracl {
 
 struct text_position {
-    int point;
-    int line, column;
+    uint32_t point;
+    uint32_t line, column;
+
+    auto operator<=>(const text_position &other) const {
+        return point <=> other.point;
+    }
 };
 
 struct text_range {
     text_position x0, x1;
+
+    auto operator<=>(const text_range &other) const {
+        return x0 <=> other.x0;
+    }
 };
 
 struct file_position {
@@ -24,7 +35,13 @@ struct file_range {
     text_range range;
 };
 
-void print_annotated_range(const file_range &range, const std::string &annot);
+
+struct file {
+    std::string filename;
+    std::string text;
+};
+
+void print_range(std::span<char> text, std::vector<text_range> ranges);
 
 } // end namespace paracl
 

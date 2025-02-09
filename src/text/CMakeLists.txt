@@ -3,4 +3,5 @@ add_paracl_library(
 
   SOURCES
   file.cpp
+  display.cpp
 )
