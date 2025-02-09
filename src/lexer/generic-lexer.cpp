@@ -32,7 +32,7 @@ auto generic_lexer::emit_token() -> std::optional<token> {
     iter_ = last_terminal_.text.end();
     current_state_id_ = INITIAL_STATE;
 
-    last_terminal_.range.x0 = position_;
+    last_terminal_.range.begin = position_;
 
     return result;
 }
@@ -82,7 +82,7 @@ auto generic_lexer::tokenize_next() -> std::optional<token> {
         if (next_state.is_terminal)
             last_terminal_ = {
                 .type = next_state.token,
-                .range = {.x0 = last_terminal_.range.x0, .x1 = position_},
+                .range = text_range{last_terminal_.range.begin, position_},
                 .text = std::span<char>{
                     last_terminal_.text.begin(),
                     iter_
