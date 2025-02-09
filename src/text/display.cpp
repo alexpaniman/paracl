@@ -1,5 +1,6 @@
 #include "paracl/text/display.h"
 
+#include <cstdint>
 #include <span>
 #include <cassert>
 #include <algorithm>
@@ -9,63 +10,55 @@
 
 namespace paracl {
 
-void print_range(std::span<char> text, std::vector<text_range> ranges) {
+namespace {
 
-    assert(!ranges.empty());
-    std::sort(ranges.begin(), ranges.end());
+int32_t get_previous_iter_line(text_position pos) {
+    return pos.line - (pos.column == 0 ? 1 : 0);
+}
 
-    // compute the beginning line:
-    int32_t i = ranges[0].begin.point - ranges[0].begin.column;
+void print_line(std::span<char> text, int32_t &i) {
+    int32_t size = text.size();
 
-    int32_t line_from = ranges[0].begin.line;
-    int32_t line_to   = ranges[ranges.size() - 1].end.line - (ranges[ranges.size() - 1].end.column == 0 ? 1 : 0);
+    while (true) {
+        if (i > size)
+            break;
 
-    for (int32_t line = line_from; line <= line_to; ++ line) {
-        std::cout << std::setw(5) << line << " | ";
-
-        // == print a line
-
-        int32_t start = i;
-
-        for (;; ++ i) {
-            if (i > (int32_t) text.size())
-                break;
-
-            std::cout << text[i];
-
-            if (text[i] == '\n')
-                break;
-        }
+        std::cout << text[i];
 
         if (text[i] == '\n')
-            ++ i;
+            break;
 
-        if (i > (int32_t) text.size()) {
-            std::cout << "\n"; // TODO: ??
-        }
+        ++ i;
+    }
 
-        // ===============
+    if (text[i] == '\n')
+        ++ i;
 
-        std::cout << std::setw(5) << "" << " | ";
+    if (i > size)
+        std::cout << "\n";
+}
 
-        i = start;
-        for (;; ++ i) {
-            if (i > (int32_t) text.size())
-                break;
+bool print_annotations(int32_t start, int32_t end, std::span<text_range> ranges, bool dry_run = false) {
+    bool has_annotations = false;
 
-            bool beginning = false;
-            bool inside = false;
-            for (uint32_t current_range = 0; current_range < ranges.size(); ++ current_range) {
-                if (i <  (int32_t) ranges[current_range].begin.point)
-                    ;
-                else
-                if (i == (int32_t) ranges[current_range].begin.point)
-                    inside = beginning = true;
-                else
-                if (i <  (int32_t) ranges[current_range].end.point)
-                    inside = true;
+    for (int32_t i = start; i < end; ++ i) {
+        bool beginning = false;
+        bool inside = false;
+        for (size_t j = 0; j < ranges.size(); ++ j) {
+            if (i <  static_cast<int32_t>(ranges[j].begin.point))
+                continue;
+
+            if (i == static_cast<int32_t>(ranges[j].begin.point)) {
+                inside = true;
+                beginning = true;
+                continue;
             }
 
+            if (i <  static_cast<int32_t>(ranges[j].end.point))
+                inside = true;
+        }
+
+        if (!dry_run) {
             if (!inside)
                 std::cout << " ";
             else
@@ -73,20 +66,50 @@ void print_range(std::span<char> text, std::vector<text_range> ranges) {
                 std::cout << "^";
             else
                 std::cout << "~";
-
-
-            if (text[i] == '\n') {
-                std::cout << "\n";
-                break;
-            }
         }
 
-        if (text[i] == '\n')
-            ++ i;
+        has_annotations |= inside;
+    }
 
-        if (i > (int32_t) text.size()) {
-            std::cout << "\n"; // TODO: ??
-            break;
+    if (!dry_run)
+        std::cout << "\n";
+
+    return has_annotations;
+}
+
+} // end anonymous namespace
+
+
+void print_range(std::span<char> text, std::vector<text_range> ranges) {
+    static constexpr int32_t line_numbers_space = 5;
+
+    assert(!ranges.empty());
+    std::sort(ranges.begin(), ranges.end());
+
+    auto &position_open = ranges[0].begin;
+    auto &position_stop = ranges[ranges.size() - 1].end;
+
+    // compute the beginning line:
+    int32_t i = position_open.point - position_open.column;
+
+    int32_t line_min = position_open.line;
+    int32_t line_max = get_previous_iter_line(position_stop);
+
+    for (int32_t line = line_min; line <= line_max; ++ line) {
+        std::cout << std::setw(line_numbers_space) << line << " | ";
+
+        int32_t start = i;
+        print_line(text, i);
+
+        int32_t end = i;
+
+
+        bool has_annotations =
+            print_annotations(start, end, ranges, /*dry_run=*/true);
+
+        if (has_annotations) {
+            std::cout << std::setw(line_numbers_space) << "" << " | ";
+            print_annotations(start, end, ranges, /*dry_run=*/false);
         }
     }
 }
