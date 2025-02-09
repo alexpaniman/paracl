@@ -32,6 +32,8 @@
             pkgs.clang-tools
             pkgs.mold
             pkgs.ninja
+            pkgs.lldb
+            pkgs.gdb
           ] ++ packages.default.nativeBuildInputs;
         };
       }

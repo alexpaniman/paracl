@@ -18,7 +18,8 @@ int main(int argc, const char *argv[]) {
 
     for (uint32_t i = 0; i < tokens.size(); ++ i) {
         auto tok1 = tokens[i];
-        std::vector<paracl::token> toks{tok1};
+        auto tok2 = tokens[3];
+        std::vector<paracl::token> toks{tok1, tok2};
 
         std::cout << tok1.range.x0.line << ":" << tok1.range.x0.column << "\n";
         std::cout << tok1.range.x1.line << ":" << tok1.range.x1.column << "\n";
