@@ -3,6 +3,8 @@
 #include "paracl/lexer/token.h"
 
 #include "paracl/text/display.h"
+#include "paracl/text/ansi.h"
+
 #include "state-machine.h"
 
 #include <cassert>
@@ -60,15 +62,6 @@ void print_tokens(std::span<token> tokens) {
     for (const token &tok: tokens)
         std::cout << describe_token(tok) << "\n";
 }
-
-inline constexpr std::string RESET   = "\033[0m";
-inline constexpr std::string RED     = "\033[31m";
-inline constexpr std::string GREEN   = "\033[32m";
-inline constexpr std::string YELLOW  = "\033[33m";
-inline constexpr std::string BLUE    = "\033[34m";
-inline constexpr std::string MAGENTA = "\033[35m";
-inline constexpr std::string CYAN    = "\033[36m";
-inline constexpr std::string BOLD    = "\033[1m";
 
 // Function to print messages with colors
 void print_message(const std::string& type, const std::string& message, const std::string& color) {
