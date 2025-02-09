@@ -38,6 +38,7 @@ public:
 
     struct token {
         token_type type;
+        text_range range;
         std::span<char> text;
     };
 
