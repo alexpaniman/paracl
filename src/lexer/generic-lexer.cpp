@@ -46,6 +46,8 @@ auto generic_lexer::advance() -> void {
     if (iter_ == end_)
         return;
 
+    ++ position_.point;
+
     auto prev_iter = iter_ ++;
     if (*prev_iter == '\n') {
         position_.line ++;
@@ -54,7 +56,6 @@ auto generic_lexer::advance() -> void {
         return;
     }
 
-    ++ position_.point;
     ++ position_.column;
 }
 
