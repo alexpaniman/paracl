@@ -17,11 +17,9 @@ int main(int argc, const char *argv[]) {
     paracl::print_tokens(tokens);
 
     for (uint32_t i = 0; i < tokens.size(); ++ i) {
-        auto tok1 = tokens[i];
-        auto tok2 = tokens[0];
-        auto tok3 = tokens[1];
-        std::vector<paracl::token> toks{tok1, tok2, tok3};
-        paracl::display_tokens(source, paracl::message_type::NOTE, "printing random range:", toks);
+        paracl::display_tokens(source, paracl::message_type::NOTE, "printing random range:", {
+            { tokens[i], "notes: this" }
+        });
     }
 }
 

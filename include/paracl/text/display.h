@@ -78,7 +78,16 @@ struct file {
     std::string text;
 };
 
-void print_range(std::span<char> text, std::vector<text_range> ranges);
+struct annotated_range {
+    text_range range;
+    std::string annotation;
+
+    auto operator<=>(const annotated_range &other) const {
+        return range <=> other.range;
+    }
+}; 
+
+void print_range(std::span<char> text, std::vector<annotated_range> ranges);
 
 } // end namespace paracl
 
