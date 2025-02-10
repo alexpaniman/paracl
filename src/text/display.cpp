@@ -1,4 +1,5 @@
 #include "paracl/text/display.h"
+#include "paracl/text/ansi.h"
 
 #include <cstdint>
 #include <span>
@@ -50,6 +51,10 @@ void print_line(std::span<char> text, int32_t &i) {
 bool print_annotations(size_t start, size_t end, std::span<annotated_range> ranges, bool dry_run = false) {
     bool has_annotations = false;
 
+    if (!dry_run) {
+        std::cout << BOLD << GREEN;
+    }
+
     for (size_t i = start; i < end; ++ i) {
         bool beginning = false;
         bool inside = false;
@@ -80,8 +85,10 @@ bool print_annotations(size_t start, size_t end, std::span<annotated_range> rang
         has_annotations |= inside;
     }
 
-    if (!dry_run)
+    if (!dry_run) {
+        std::cout << RESET;
         std::cout << "\n";
+    }
 
     return has_annotations;
 }
@@ -93,6 +100,9 @@ auto get_join_points(size_t begin, size_t end, std::vector<annotated_range> rang
             continue;
 
         if (ranges[j].range.end.point < begin)
+            continue;
+
+        if (ranges[j].annotation.empty())
             continue;
 
         if (ranges[j].range.begin.line != ranges[j].range.end.line) {
@@ -114,7 +124,10 @@ void print_messages(std::vector<annotated_point> ranges) {
 
     print_line_number(5, "");
 
+
     {
+        std::cout << GREEN;
+
         size_t current_column = 0;
         for (unsigned i = 0; i < ranges.size(); ++ i) {
             auto &[pos, annotation] = ranges[i];
@@ -126,11 +139,15 @@ void print_messages(std::vector<annotated_point> ranges) {
             std::cout << "|";
         }
 
+        std::cout << RESET;
+
         std::cout << "\n";
     }
 
     for (int j = ranges.size() - 1; j >= 0; -- j) {
         print_line_number(5, "");
+
+        std::cout << GREEN;
 
         size_t current_column = 1;
         for (int i = 0; i <= j; ++ i) {
@@ -147,8 +164,13 @@ void print_messages(std::vector<annotated_point> ranges) {
                 std::cout << "|";
         }
 
+        std::cout << RESET;
+
         std::cout << "\n";
     }
+
+    print_line_number(5, "");
+    std::cout << "\n";
 }
 
 } // end anonymous namespace
@@ -185,7 +207,10 @@ void print_range(std::span<char> text, std::vector<annotated_range> ranges) {
             print_annotations(start, end, ranges, /*dry_run=*/false);
 
             auto line_ranges = get_join_points(start, end, ranges);
-            print_messages(std::move(line_ranges));
+            if (!line_ranges.empty())
+                print_messages(std::move(line_ranges));
+            // (void) get_join_points;
+            // (void) print_messages;
         }
     }
 }
