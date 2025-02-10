@@ -27,7 +27,12 @@ enum class message_type {
     ERROR
 };
 
-void display_tokens(file source, message_type type, std::string annotation, std::span<token> tokens);
+struct annotated_token {
+    token token;
+    std::string annotation;
+};
+
+void display_tokens(file source, message_type type, std::string message, std::initializer_list<annotated_token> ranges);
 
 
 } // end namespace paracl

@@ -68,27 +68,25 @@ void print_message(const std::string& type, const std::string& message, const st
     std::cout << BOLD << color << type << RESET << ": " << message << std::endl;
 }
 
-void display_tokens(file source, message_type type, std::string annotation, std::span<token> tokens) {
-    assert(!tokens.empty());
 
-    std::vector<text_range> locations;
-    for (const token &tok: tokens)
-        locations.push_back(tok.range);
+void display_tokens(file source, message_type type, std::string message, std::initializer_list<annotated_token> ranges) {
+    assert(ranges.size() != 0);
 
-    std::sort(locations.begin(), locations.end());
+    std::vector<annotated_range> annotated_ranges;
+    for (const auto &[tok, annotation]: ranges)
+        annotated_ranges.push_back({tok.range, annotation});
 
-    std::cout << source.filename
-        << ":" << locations[0].begin.line
-        << ":" << locations[0].begin.column
-        << " ";
+    auto &begin_range = annotated_ranges[0].range.begin;
+
+    std::cout << source.filename << ":" << begin_range.line << ":" << begin_range.column << " ";
 
     switch (type) {
-    case message_type::NOTE:    print_message("note",    annotation, CYAN);   break;
-    case message_type::ERROR:   print_message("error",   annotation, RED);    break;
-    case message_type::WARNING: print_message("warning", annotation, YELLOW); break;
+    case message_type::NOTE:    print_message("note",    message, CYAN);   break;
+    case message_type::ERROR:   print_message("error",   message, RED);    break;
+    case message_type::WARNING: print_message("warning", message, YELLOW); break;
     }
 
-    print_range(source.text, std::move(locations));
+    print_range(source.text, std::move(annotated_ranges));
 }
 
 } // end namespace paracl
