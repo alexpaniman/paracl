@@ -1,4 +1,5 @@
 #include "paracl/lexer/lexer.h"
+#include "paracl/text/ansi.h"
 #include "paracl/text/display.h"
 #include "paracl/text/file.h"
 
@@ -17,9 +18,15 @@ int main(int argc, const char *argv[]) {
     paracl::print_tokens(tokens);
 
     for (uint32_t i = 0; i < tokens.size(); ++ i) {
-        paracl::display_tokens(source, paracl::message_type::NOTE, "printing random range:", {
-            { tokens[i], "notes: this" }
+
+        paracl::display_tokens(source, paracl::message_type::NOTE, "printing an annotated range", {
+            { tokens[5],  "" },
+            { tokens[15], "" },
+            { tokens[4],  paracl::CYAN + paracl::BOLD + "notes:" + paracl::RESET + " opening «{»" },
+            { tokens[42],  paracl::CYAN + paracl::BOLD + "notes:" + paracl::RESET + " closing «}»" },
         });
+
+        std::cout << "\n";
     }
 }
 
