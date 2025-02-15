@@ -58,6 +58,7 @@ bool print_annotations(size_t start, size_t end, std::span<annotated_range> rang
     for (size_t i = start; i < end; ++ i) {
         bool beginning = false;
         bool inside = false;
+        bool should_connect = false;
         for (size_t j = 0; j < ranges.size(); ++ j) {
             if (i <  ranges[j].range.begin.point)
                 continue;
@@ -65,6 +66,8 @@ bool print_annotations(size_t start, size_t end, std::span<annotated_range> rang
             if (i == ranges[j].range.begin.point) {
                 inside = true;
                 beginning = true;
+
+                should_connect |= !ranges[j].annotation.empty();
                 continue;
             }
 
@@ -76,7 +79,7 @@ bool print_annotations(size_t start, size_t end, std::span<annotated_range> rang
             if (!inside)
                 std::cout << " ";
             else
-            if (beginning)
+            if (beginning && should_connect)
                 std::cout << "┬";
             else
                 std::cout << "─";
@@ -121,29 +124,6 @@ void print_line_number(int32_t line_numbers_space, auto line) {
 
 void print_messages(std::vector<annotated_point> ranges, size_t column_alignment = 0) {
     std::sort(ranges.begin(), ranges.end());
-
-    print_line_number(5, "");
-
-
-    {
-        std::cout << GREEN;
-
-        size_t current_column = 0;
-        for (unsigned i = 0; i < ranges.size(); ++ i) {
-            auto &[pos, annotation] = ranges[i];
-            while (current_column < pos.column) {
-                std::cout << " ";
-                ++ current_column;
-            }
-
-            std::cout << "│";
-            ++ current_column;
-        }
-
-        std::cout << RESET;
-
-        std::cout << "\n";
-    }
 
     size_t max_column = column_alignment;
     for (int j = ranges.size() - 1; j >= 0; -- j) {
