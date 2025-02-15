@@ -96,23 +96,16 @@ bool print_annotations(size_t start, size_t end, std::span<annotated_range> rang
     return has_annotations;
 }
 
-auto get_join_points(size_t begin, size_t end, std::vector<annotated_range> ranges) {
+auto get_join_points(std::vector<annotated_range> ranges, size_t line) {
     std::vector<annotated_point> line_ranges;
     for (size_t j = 0; j < ranges.size(); ++ j) {
-        if (ranges[j].range.end.point >= end)
-            continue;
-
-        if (ranges[j].range.end.point < begin)
+        if (ranges[j].range.begin.line != line)
             continue;
 
         if (ranges[j].annotation.empty())
             continue;
 
-        if (ranges[j].range.begin.line != ranges[j].range.end.line) {
-            line_ranges.push_back({ranges[j].range.end, ranges[j].annotation});
-        } else {
-            line_ranges.push_back({ranges[j].range.begin, ranges[j].annotation});
-        }
+        line_ranges.push_back({ranges[j].range.begin, ranges[j].annotation});
     }
 
     return line_ranges;
@@ -217,7 +210,7 @@ void print_range(std::span<char> text, std::vector<annotated_range> ranges) {
             print_line_number(line_numbers_space, "");
             print_annotations(start, end, ranges, /*dry_run=*/false);
 
-            auto line_ranges = get_join_points(start, end, ranges);
+            auto line_ranges = get_join_points(ranges, line);
             if (!line_ranges.empty())
                 print_messages(std::move(line_ranges), max_column);
         }
