@@ -196,9 +196,10 @@ void print_range(std::span<char> text, std::vector<annotated_range> ranges) {
         if (max_column < range.range.begin.column)
             max_column = range.range.begin.column;
 
-        if (max_column < range.range.end.column)
-            max_column = range.range.end.column;
+        // if (max_column < range.range.end.column)
+        //     max_column = range.range.end.column;
     }
+    max_column += 2;
     // ======================
 
     for (int32_t line = line_min; line <= line_max; ++ line) {
