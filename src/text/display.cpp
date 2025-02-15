@@ -77,9 +77,9 @@ bool print_annotations(size_t start, size_t end, std::span<annotated_range> rang
                 std::cout << " ";
             else
             if (beginning)
-                std::cout << "^";
+                std::cout << "┬";
             else
-                std::cout << "~";
+                std::cout << "─";
         }
 
         has_annotations |= inside;
@@ -119,7 +119,7 @@ void print_line_number(int32_t line_numbers_space, auto line) {
     std::cout << std::setw(line_numbers_space) << line << " | ";
 }
 
-void print_messages(std::vector<annotated_point> ranges) {
+void print_messages(std::vector<annotated_point> ranges, size_t column_alignment = 0) {
     std::sort(ranges.begin(), ranges.end());
 
     print_line_number(5, "");
@@ -136,7 +136,8 @@ void print_messages(std::vector<annotated_point> ranges) {
                 ++ current_column;
             }
 
-            std::cout << "|";
+            std::cout << "│";
+            ++ current_column;
         }
 
         std::cout << RESET;
@@ -144,12 +145,13 @@ void print_messages(std::vector<annotated_point> ranges) {
         std::cout << "\n";
     }
 
+    size_t max_column = column_alignment;
     for (int j = ranges.size() - 1; j >= 0; -- j) {
         print_line_number(5, "");
 
         std::cout << GREEN;
 
-        size_t current_column = 1;
+        size_t current_column = 0;
         for (int i = 0; i <= j; ++ i) {
             auto &[pos, annotation] = ranges[i];
 
@@ -158,10 +160,27 @@ void print_messages(std::vector<annotated_point> ranges) {
                 ++ current_column;
             }
 
-            if (i == j)
-                std::cout << annotation;
-            else
-                std::cout << "|";
+            if (i == j) {
+                if (current_column > max_column)
+                    max_column = current_column;
+
+                if (current_column < max_column) {
+                    std::cout << "└";
+                    ++ current_column;
+                }
+
+                while (current_column < max_column) {
+                    std::cout << "─";
+                    ++ current_column;
+                }
+
+                std::cout << " " << annotation;
+
+                current_column += annotation.size() + 1;
+            } else {
+                std::cout << "│";
+                ++ current_column;
+            }
         }
 
         std::cout << RESET;
@@ -191,6 +210,17 @@ void print_range(std::span<char> text, std::vector<annotated_range> ranges) {
     int32_t line_min = position_open.line;
     int32_t line_max = get_previous_iter_line(position_stop);
 
+    // =============== column
+    size_t max_column = 0;
+    for (auto &&range: ranges) {
+        if (max_column < range.range.begin.column)
+            max_column = range.range.begin.column;
+
+        if (max_column < range.range.end.column)
+            max_column = range.range.end.column;
+    }
+    // ======================
+
     for (int32_t line = line_min; line <= line_max; ++ line) {
         print_line_number(line_numbers_space, line);
 
@@ -208,9 +238,7 @@ void print_range(std::span<char> text, std::vector<annotated_range> ranges) {
 
             auto line_ranges = get_join_points(start, end, ranges);
             if (!line_ranges.empty())
-                print_messages(std::move(line_ranges));
-            // (void) get_join_points;
-            // (void) print_messages;
+                print_messages(std::move(line_ranges), max_column);
         }
     }
 }
