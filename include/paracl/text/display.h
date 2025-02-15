@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <span>
@@ -11,6 +12,8 @@ namespace paracl {
 struct text_position {
     size_t point;
     size_t line, column;
+
+    text_position() = default; // TODO: necessary?
 
     text_position(size_t point, size_t line, size_t column):
         point(point),
@@ -54,6 +57,8 @@ struct text_position {
 struct text_range {
     text_position begin, end;
 
+    text_range() = default; // TODO: necessary?
+
     text_range(text_position begin, text_position end):
         begin(begin),
         end(end) {
@@ -73,11 +78,6 @@ struct text_range {
     }
 };
 
-struct file {
-    std::string filename;
-    std::string text;
-};
-
 struct annotated_range {
     text_range range;
     std::string annotation;
@@ -88,6 +88,65 @@ struct annotated_range {
 }; 
 
 void print_range(std::span<char> text, std::vector<annotated_range> ranges);
+
+
+
+template <typename type>
+struct rngable {};
+
+struct rng {
+    template <typename type>
+    rng(const type &location) {
+        actual_range.range = rngable<type>::to_range(location);
+    }
+
+    template <typename type>
+    rng(const type &location, const std::string &text) {
+        actual_range.range = rngable<type>::to_range(location);
+        actual_range.annotation = text;
+    }
+
+    template <typename type>
+    rng(const type &x0, const type &x1) {
+        text_range range0 = rngable<type>::to_range(x0);
+        text_range range1 = rngable<type>::to_range(x1);
+
+        actual_range.range.begin = range0.begin;
+        actual_range.range.end = range1.end;
+    }
+
+    template <typename type>
+    rng(const type &x0, const type &x1, const std::string &text) {
+        text_range range0 = rngable<type>::to_range(x0);
+        text_range range1 = rngable<type>::to_range(x1);
+
+        actual_range.range.begin = range0.begin;
+        actual_range.range.end = range1.end;
+
+        actual_range.annotation = text;
+    }
+
+    annotated_range actual_range;
+};
+
+struct file {
+    std::string filename;
+    std::string text;
+
+    void message(const std::string &message, std::vector<rng> rngs) {
+        assert(rngs.size() != 0);
+
+        std::vector<annotated_range> ranges;
+        for (auto rng: rngs)
+            ranges.push_back(rng.actual_range);
+
+        std::sort(ranges.begin(), ranges.end());
+
+        std::cout << filename << ":" << ranges[0].range.begin.line << ":" << ranges[0].range.begin.column << ": " << message << "\n";
+        print_range(text, ranges);
+    }
+};
+
 
 } // end namespace paracl
 
