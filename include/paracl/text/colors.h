@@ -237,11 +237,11 @@ public:
     void print() {
         bool should_colorize = isatty(fileno(stdout));
 
-        int open_index = 0, stop_index = 0;
+        size_t open_index = 0, stop_index = 0;
         for (size_t i = 0; i < text_.size(); ++ i) {
             if (should_colorize) {
                 bool should_end = false;
-                while (overlays_[stop_index].end >= i) {
+                while (stop_index < overlays_.size() && overlays_[stop_index].end >= i) {
                     should_end = true;
                     ++ stop_index;
                 }
@@ -249,7 +249,7 @@ public:
                 if (should_end)
                     std::cout << RESET_SEQUENCE;
 
-                while (overlays_[open_index].begin < i) {
+                while (open_index < overlays_.size() && overlays_[open_index].begin < i) {
                     std::cout << overlays_[open_index].formatting.get_ansi_code();
                     ++ open_index;
                 }

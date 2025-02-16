@@ -24,7 +24,7 @@ int32_t get_previous_iter_line(text_position pos) {
     return pos.line - (pos.column == 0 ? 1 : 0);
 }
 
-void print_line(colored_text_stream stream, std::span<char> text, int32_t &i) {
+void print_line(colored_text_stream &stream, std::span<char> text, int32_t &i) {
     int32_t size = text.size();
 
     while (true) {
@@ -175,7 +175,7 @@ void print_messages(colored_text_stream &stream,
 } // end anonymous namespace
 
 
-void print_range(colored_text_stream stream,
+void print_range(colored_text_stream &stream,
                  std::span<char> text,
                  std::vector<annotated_range> ranges,
                  annotation_config cfg) {
