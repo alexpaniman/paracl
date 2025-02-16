@@ -86,7 +86,15 @@ void display_tokens(file source, message_type type, std::string message, std::in
     case message_type::WARNING: print_message("warning", message, YELLOW); break;
     }
 
-    print_range(source.text, std::move(annotated_ranges));
+
+    annotation_config cfg {
+        .line = { .foreground_color = ansi_preset_color::GREEN }
+    };
+
+    colored_text_stream stream;
+    print_range(stream, source.text, std::move(annotated_ranges), cfg);
+
+    stream.print();
 }
 
 } // end namespace paracl

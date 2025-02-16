@@ -5,8 +5,6 @@
 #include <span>
 #include <cassert>
 #include <algorithm>
-#include <iostream>
-#include <iomanip>
 
 
 namespace paracl {
@@ -26,14 +24,14 @@ int32_t get_previous_iter_line(text_position pos) {
     return pos.line - (pos.column == 0 ? 1 : 0);
 }
 
-void print_line(std::span<char> text, int32_t &i) {
+void print_line(colored_text_stream stream, std::span<char> text, int32_t &i) {
     int32_t size = text.size();
 
     while (true) {
         if (i > size)
             break;
 
-        std::cout << text[i];
+        stream.append("{}", text[i]);
 
         if (text[i] == '\n')
             break;
@@ -45,20 +43,23 @@ void print_line(std::span<char> text, int32_t &i) {
         ++ i;
 
     if (i > size)
-        std::cout << "\n";
+        stream.append("\n");
 }
 
-bool print_annotations(size_t start, size_t end, std::span<annotated_range> ranges, bool dry_run = false) {
+bool print_annotations(colored_text_stream &stream,
+                       size_t start, size_t end,
+                       std::span<annotated_range> ranges,
+                       annotation_config cfg,
+                       bool dry_run = false) {
+
+    stream.set_formatting(cfg.line);
+
     bool has_annotations = false;
-
-    if (!dry_run) {
-        std::cout << BOLD << GREEN;
-    }
-
     for (size_t i = start; i < end; ++ i) {
         bool beginning = false;
         bool inside = false;
         bool should_connect = false;
+
         for (size_t j = 0; j < ranges.size(); ++ j) {
             if (i <  ranges[j].range.begin.point)
                 continue;
@@ -77,20 +78,21 @@ bool print_annotations(size_t start, size_t end, std::span<annotated_range> rang
 
         if (!dry_run) {
             if (!inside)
-                std::cout << " ";
+                stream.append(" ");
             else
             if (beginning && should_connect)
-                std::cout << "┬";
-            else
-                std::cout << "─";
+                stream.append("┬");
+            else {
+                stream.append("─");
+            }
         }
 
         has_annotations |= inside;
     }
 
     if (!dry_run) {
-        std::cout << RESET;
-        std::cout << "\n";
+        stream.clear_formatting();
+        stream.append("\n");
     }
 
     return has_annotations;
@@ -111,25 +113,30 @@ auto get_join_points(std::vector<annotated_range> ranges, size_t line) {
     return line_ranges;
 }
 
-void print_line_number(int32_t line_numbers_space, auto line) {
-    std::cout << std::setw(line_numbers_space) << line << " | ";
+void print_line_number(colored_text_stream &stream,
+                       int32_t line_numbers_space, auto line) {
+
+    (void) line_numbers_space;
+    stream.append("{:>5} | ", line);
 }
 
-void print_messages(std::vector<annotated_point> ranges, size_t column_alignment = 0) {
+void print_messages(colored_text_stream &stream,
+                    std::vector<annotated_point> ranges, size_t column_alignment = 0) {
+
     std::sort(ranges.begin(), ranges.end());
 
     size_t max_column = column_alignment;
     for (int j = ranges.size() - 1; j >= 0; -- j) {
-        print_line_number(5, "");
+        print_line_number(stream, 5, "");
 
-        std::cout << GREEN;
+        stream.append("{}", GREEN);
 
         size_t current_column = 0;
         for (int i = 0; i <= j; ++ i) {
             auto &[pos, annotation] = ranges[i];
 
             while (current_column < pos.column) {
-                std::cout << " ";
+                stream.append(" ");
                 ++ current_column;
             }
 
@@ -138,37 +145,41 @@ void print_messages(std::vector<annotated_point> ranges, size_t column_alignment
                     max_column = current_column;
 
                 if (current_column < max_column) {
-                    std::cout << "└";
+                    stream.append("└");
                     ++ current_column;
                 }
 
                 while (current_column < max_column) {
-                    std::cout << "─";
+                    stream.append("─");
                     ++ current_column;
                 }
 
-                std::cout << " " << annotation;
+                stream.append(" {}", annotation);
 
                 current_column += annotation.size() + 1;
             } else {
-                std::cout << "│";
+                stream.append("│");
                 ++ current_column;
             }
         }
 
-        std::cout << RESET;
+        stream.clear_formatting();
 
         std::cout << "\n";
     }
 
-    print_line_number(5, "");
-    std::cout << "\n";
+    print_line_number(stream, 5, "");
+    stream.append("\n");
 }
 
 } // end anonymous namespace
 
 
-void print_range(std::span<char> text, std::vector<annotated_range> ranges) {
+void print_range(colored_text_stream stream,
+                 std::span<char> text,
+                 std::vector<annotated_range> ranges,
+                 annotation_config cfg) {
+
     static constexpr int32_t line_numbers_space = 5;
 
     assert(!ranges.empty());
@@ -188,31 +199,29 @@ void print_range(std::span<char> text, std::vector<annotated_range> ranges) {
     for (auto &&range: ranges) {
         if (max_column < range.range.begin.column)
             max_column = range.range.begin.column;
-
-        // if (max_column < range.range.end.column)
-        //     max_column = range.range.end.column;
     }
+
     max_column += 2;
     // ======================
 
     for (int32_t line = line_min; line <= line_max; ++ line) {
-        print_line_number(line_numbers_space, line);
+        print_line_number(stream, line_numbers_space, line);
 
         int32_t start = i;
-        print_line(text, i);
+        print_line(stream, text, i);
 
         int32_t end = i;
 
         bool has_annotations =
-            print_annotations(start, end, ranges, /*dry_run=*/true);
+            print_annotations(stream, start, end, ranges, cfg, /*dry_run=*/true);
 
         if (has_annotations) {
-            print_line_number(line_numbers_space, "");
-            print_annotations(start, end, ranges, /*dry_run=*/false);
+            print_line_number(stream, line_numbers_space, "");
+            print_annotations(stream, start, end, ranges, cfg, /*dry_run=*/false);
 
             auto line_ranges = get_join_points(ranges, line);
             if (!line_ranges.empty())
-                print_messages(std::move(line_ranges), max_column);
+                print_messages(stream, std::move(line_ranges), max_column);
         }
     }
 }
