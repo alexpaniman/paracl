@@ -96,7 +96,7 @@ struct annotation_config {
 };
 
 
-void print_range(colored_text_stream stream,
+void print_range(colored_text_stream &stream,
                  std::span<char> text,
                  std::vector<annotated_range> ranges,
                  annotation_config cfg);
