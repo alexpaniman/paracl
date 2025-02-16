@@ -18,24 +18,44 @@ int main(int argc, const char *argv[]) {
     std::vector<paracl::token> tokens = paracl::tokenize(source.text);
 
     std::vector<paracl::rng> rngs;
-    for (size_t i = 0; i < tokens.size(); ++ i) {
+    for (size_t i = 0; i < tokens.size() -3; ++ i) {
         std::stringstream ss;
         ss << paracl::BOLD << paracl::CYAN << "note: " << paracl::RESET;
         ss << "printing token #" << i;
 
         std::string description = paracl::describe_token(tokens[i]);
 
-        paracl::rng r { tokens[i], description };
-        // source.message(ss.str(), {
-        //     r
-        // });
+        // paracl::rng r { tokens[i], description };
+        source.message(ss.str(), {
+            //r,
+            {tokens[i], tokens[i+3], "note"},
+            {tokens[i+1], tokens[i+2], "note"},
+            {tokens[i+2], tokens[i+3], "note"},
+            tokens[i]
+        });
 
-        rngs.push_back(r);
+        // rngs.push_back(r);
 
         // std::cout << "\n";
     }
 
-    source.message("printing all tokens", rngs);
+    // source.message("printing all tokens", rngs);
+
+    // using namespace paracl;
+
+    // print_range(source.text, {
+    //     { { { 34, 3, 10 }, { 129, 10, 10 } },
+    //     "note: this is it"
+    //     },
+
+    //     { { { 29, 3, 4 }, { 134, 10, 14 } },
+    //     "note: this is it"
+    //     },
+
+    //     { { { 30, 3, 4 }, { 32, 3, 6 } },
+    //     "note: this is it"
+    //     },
+    // });
 
     // for (uint32_t i = 0; i < tokens.size() - 2; ++ i) {
 

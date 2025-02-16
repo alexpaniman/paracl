@@ -1,5 +1,6 @@
 #pragma once
 
+#include "paracl/text/colors.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -13,7 +14,7 @@ struct text_position {
     size_t point;
     size_t line, column;
 
-    text_position() = default; // TODO: necessary?
+    text_position() = default;
 
     text_position(size_t point, size_t line, size_t column):
         point(point),
@@ -57,7 +58,7 @@ struct text_position {
 struct text_range {
     text_position begin, end;
 
-    text_range() = default; // TODO: necessary?
+    text_range() = default;
 
     text_range(text_position begin, text_position end):
         begin(begin),
@@ -87,7 +88,18 @@ struct annotated_range {
     }
 }; 
 
-void print_range(std::span<char> text, std::vector<annotated_range> ranges);
+struct annotation_config {
+    ansi_formatting line = {};
+    ansi_formatting file = {};
+    ansi_formatting nums = {};
+    size_t show_before = 0, show_after = 0;
+};
+
+
+void print_range(colored_text_stream stream,
+                 std::span<char> text,
+                 std::vector<annotated_range> ranges,
+                 annotation_config cfg);
 
 
 
@@ -95,6 +107,8 @@ template <typename type>
 struct rngable {};
 
 struct rng {
+    rng() = default;
+
     template <typename type>
     rng(const type &location) {
         actual_range.range = rngable<type>::to_range(location);
@@ -143,7 +157,15 @@ struct file {
         std::sort(ranges.begin(), ranges.end());
 
         std::cout << filename << ":" << ranges[0].range.begin.line << ":" << ranges[0].range.begin.column << ": " << message << "\n";
-        print_range(text, ranges);
+
+        annotation_config cfg {
+            .line = { .foreground_color = ansi_preset_color::GREEN }
+        };
+
+        colored_text_stream stream;
+        print_range(stream, text, ranges, cfg);
+
+        stream.print();
     }
 };
 
