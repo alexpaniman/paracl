@@ -1,7 +1,7 @@
 #pragma once
 
 #include "paracl/ast/context.h"
-#include "paracl/ast/bit_operations.h"
+#include "paracl/ast/marked_pointers.h"
 
 #include <iostream>
 #include <memory>
@@ -154,8 +154,6 @@ public:
     using unary_operation::unary_operation;
 
     int64_t execute(context &ctx) override {
-        std::cerr << get_value(child_->execute(ctx)) << std::endl;
-        std::cerr << op{}(get_value(child_->execute(ctx))) << std::endl;
         return create_value(op{}(get_value(child_->execute(ctx))));
     }
 
@@ -269,10 +267,7 @@ public:
     void dump_gv(std::ostream &ostr) const override {
         ostr << "    node" << this
              << "[shape=Mrecord, label=";
-        if constexpr (type == binary_node_type::comparation)
-            ostr << "<<B>" << to_string() << "</B>>";
-        else
-            ostr << "\"" << to_string() << "\"";
+        ostr << "\"" << to_string() << "\"";
         ostr << ", style=filled, fillcolor=\"#" << std::hex << node_color << "\"];\n";
         ostr << "    node" << this
              << "->node" << left_.get() << " [color=\"#293133\"];\n";
@@ -298,7 +293,6 @@ using less_node            = binary_node<std::less<int64_t>,          0xC5E384, 
 using bigger_node          = binary_node<std::greater<int64_t>,       0xC5E384, binary_node_type::comparation>;
 using less_or_equal_node   = binary_node<std::less_equal<int64_t>,    0xC5E384, binary_node_type::comparation>;
 using bigger_or_equal_node = binary_node<std::greater_equal<int64_t>, 0xC5E384, binary_node_type::comparation>;
-
 
 template<bool is_loop>
 class conditional_operation_node: public node {
@@ -372,7 +366,7 @@ public:
     }
 
     void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{scanf}\", "
+        ostr << "    node" << this << "[shape = Mrecord, label = \"{scan}\", "
              << "style = \"filled\", fillcolor = \"#EAA9D6\"];\n";
     }
 };

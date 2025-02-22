@@ -72,6 +72,21 @@ std::unique_ptr<node> parser::parse_expression(int min_precedence) {
             case token_type::DIVIDE:
                 left = std::make_unique<divide_node>(std::move(left), std::move(right));
                 break;
+            case token_type::EQUAL:
+                left = std::make_unique<equal_node>(std::move(left), std::move(right));
+                break;
+            case token_type::LESS:
+                left = std::make_unique<less_node>(std::move(left), std::move(right));
+                break;
+            case token_type::BIGGER:
+                left = std::make_unique<bigger_node>(std::move(left), std::move(right));
+                break;
+            case token_type::LESS_OR_EQUAL:
+                left = std::make_unique<less_or_equal_node>(std::move(left), std::move(right));
+                break;
+            case token_type::BIGGER_OR_EQUAL:
+                left = std::make_unique<bigger_or_equal_node>(std::move(left), std::move(right));
+                break;
             default:
                 // добавить обработку ошибки
                 return nullptr;
@@ -150,17 +165,6 @@ std::unique_ptr<node> parser::parse_function() {
     return std::make_unique<function_node>(function_name, std::move(args));
 }
 
-std::unique_ptr<node> parser::parse_comparison_operation() {
-    switch(next_token().type) {
-        case token_type::EQUAL:           return parse_binary_operation<equal_node>();
-        case token_type::LESS:            return parse_binary_operation<less_node>();
-        case token_type::BIGGER:          return parse_binary_operation<bigger_node>();
-        case token_type::LESS_OR_EQUAL:   return parse_binary_operation<less_or_equal_node>();
-        case token_type::BIGGER_OR_EQUAL: return parse_binary_operation<bigger_or_equal_node>();
-        default:                          return nullptr; //добавить обработку ошибки
-    }
-}
-
 std::unique_ptr<node> parser::parse_assing_operation() {
     if (current_token().type != token_type::ID) {
         //добавить обработку ошибки
@@ -180,7 +184,7 @@ std::unique_ptr<node> parser::parse_condition() {
     if (eat_token().type != token_type::LEFT_PARENTHESIS) {
         //добавить обработку ошибки
     }
-    std::unique_ptr<node> condition = parse_comparison_operation();
+    std::unique_ptr<node> condition = parse_expression(0);
     if (eat_token().type != token_type::RIGHT_PARENTHESIS) {
         //добавить обработку ошибки
     }
@@ -189,6 +193,7 @@ std::unique_ptr<node> parser::parse_condition() {
 
 std::vector<std::unique_ptr<node>> parser::parse_scope() {
     std::vector<std::unique_ptr<node>> scope;
+
     while (current_token_num_ != tokens_.size()
            && current_token().type != token_type::RIGHT_CURLY_BRACKET) {
         switch(current_token().type) {
