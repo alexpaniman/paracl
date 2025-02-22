@@ -105,18 +105,28 @@ private:
     std::vector<std::unique_ptr<node>> args_;
 };
 
-class assign_node final: public node {
+template<typename impl_type>
+class assign_operation: public node {
 public:
-    explicit assign_node(std::unique_ptr<node> left, std::unique_ptr<node> right):
+    explicit assign_operation(std::unique_ptr<node> left, std::unique_ptr<node> right):
         left_(std::move(left)), right_(std::move(right)) {}
+    virtual ~assign_operation() = default;
+
+    const char* get_name() const {
+        return static_cast<const impl_type*>(this)->get_name();
+    }
+
+    int64_t assigned_value(context &ctx) const {
+        return static_cast<const impl_type*>(this)->assigned_value(ctx);
+    }
 
     int64_t execute(context &ctx) override {
-        *get_pointer(left_->execute(ctx)) = get_value(right_->execute(ctx));
+        *get_pointer(left_->execute(ctx)) = assigned_value(ctx);
         return 1;
     }
 
     void dump(std::ostream &ostr) const override {
-        ostr << "= (";
+        ostr << get_name() << " (";
         left_->dump(ostr);
         ostr << " ";
         right_->dump(ostr);
@@ -124,7 +134,7 @@ public:
     }
 
     void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{=}\", "
+        ostr << "    node" << this << "[shape = Mrecord, label = \"{" << get_name() << "}\", "
              << "style = \"filled\", fillcolor = \"#9ACEEB\"];\n";
 
         ostr << "    node" << this << "->node" << left_.get() << " [color = \"#293133\"];\n";
@@ -134,130 +144,135 @@ public:
         right_->dump_gv(ostr);
     }
 
-private:
+protected:
     std::unique_ptr<node> left_;
     std::unique_ptr<node> right_;
 };
 
-class unary_operation: public node {
+class assign_node final: public assign_operation<assign_node> {
 public:
-    explicit unary_operation(std::unique_ptr<node> left):
-        child_(std::move(left)) {}
-
-protected:
-    std::unique_ptr<node> child_;
+    using assign_operation::assign_operation;
+    
+    const char* get_name() const {
+        return "=";
+    }
+    
+    int64_t assigned_value(context &ctx) const {
+        return get_value(right_->execute(ctx));
+    }
 };
 
-template<typename op>
-class unary_arithmetic_node final: public unary_operation {
+class plus_assign_node final: public assign_operation<plus_assign_node> {
 public:
-    using unary_operation::unary_operation;
+    using assign_operation::assign_operation;
 
-    int64_t execute(context &ctx) override {
-        return create_value(op{}(get_value(child_->execute(ctx))));
+    const char* get_name() const {
+        return "+=";
     }
 
-    std::string to_string() const {
-        if constexpr (std::is_same_v<op, std::negate<int64_t>>)
-            return "-";
-        return "?";
+    int64_t assigned_value(context &ctx) const {
+        return std::plus<int64_t>()(get_value(left_->execute(ctx)), get_value(right_->execute(ctx)));
+    }
+};
+
+class minus_assign_node final: public assign_operation<minus_assign_node> {
+public:
+    using assign_operation::assign_operation;
+    
+    const char* get_name() const {
+        return "-=";
+    }
+    
+    int64_t assigned_value(context &ctx) const {
+        return std::minus<int64_t>()(get_value(left_->execute(ctx)), get_value(right_->execute(ctx)));
+    }
+};
+
+class multiply_assign_node final: public assign_operation<multiply_assign_node> {
+public:
+    using assign_operation::assign_operation;
+        
+    const char* get_name() const {
+        return "*=";
+    }
+        
+    int64_t assigned_value(context &ctx) const {
+        return std::multiplies<int64_t>()(get_value(left_->execute(ctx)), get_value(right_->execute(ctx)));
+    }
+};
+
+class divide_assign_node final: public assign_operation<divide_assign_node> {
+public:
+    using assign_operation::assign_operation;
+            
+    const char* get_name() const {
+        return "/=";
+    }
+            
+    int64_t assigned_value(context &ctx) const {
+        return std::divides<int64_t>()(get_value(left_->execute(ctx)), get_value(right_->execute(ctx)));
+    }
+};
+
+
+class negate_node final: public node {
+public:
+    explicit negate_node(std::unique_ptr<node> left):
+        child_(std::move(left)) {}
+
+    int64_t execute(context &ctx) override {
+        return create_value(std::negate<int64_t>{}(get_value(child_->execute(ctx))));
+    }
+
+    std::string get_name() const {
+        return "-";
     }
 
     void dump(std::ostream &ostr) const override {
-        ostr << to_string() << " (";
+        ostr << get_name() << " (";
         child_->dump(ostr);
         ostr << ")";
     }
 
     void dump_gv(std::ostream &ostr) const override {
         ostr << "    node" << this
-             << "[shape=Mrecord, label=\"{" << to_string()
+             << "[shape=Mrecord, label=\"{" << get_name()
              << "}\", style=filled, fillcolor=\"#9ACEEB\"];\n";
         ostr << "    node" << this
              << "->node" << child_.get() << " [color=\"#293133\"];\n";
         child_->dump_gv(ostr);
     }
+
+private:
+    std::unique_ptr<node> child_;
 };
 
-using negate_node = paracl::unary_arithmetic_node<std::negate<int64_t>>;
 
-class binary_operation: public node {
+class divide_node;
+
+template <typename impl_type, typename op>
+class arithmetic_and_comparative_operator: public node {
 public:
-    explicit binary_operation(std::unique_ptr<node> left, std::unique_ptr<node> right):
+    explicit arithmetic_and_comparative_operator(std::unique_ptr<node> left, 
+                                                 std::unique_ptr<node> right):
         left_(std::move(left)), right_(std::move(right)) {}
+    virtual ~arithmetic_and_comparative_operator() = default;
 
-protected:
-    std::unique_ptr<node> left_;
-    std::unique_ptr<node> right_;
-};
-
-enum class binary_node_type {
-    arithmetic,
-    assignment,
-    comparation
-};
-
-template<typename op, unsigned int node_color, binary_node_type type>
-class binary_node final: public binary_operation {
-public:
-    using binary_operation::binary_operation;
+    const char* get_name() const {
+        return static_cast<const impl_type*>(this)->get_name();
+    }
 
     int64_t execute(context &ctx) override {
-        if constexpr ((type == binary_node_type::arithmetic || type == binary_node_type::assignment) &&
-                      std::is_same_v<op, std::divides<int64_t>>) {
+        if constexpr (std::is_same_v<impl_type, divide_node>) {
             if (get_value(right_->execute(ctx)) == 0)
                 throw std::runtime_error("divide by zero");
         }
-
-        if constexpr (type == binary_node_type::arithmetic || type == binary_node_type::comparation) {
-            return create_value(op{}(get_value(left_->execute(ctx)),
-                                     get_value(right_->execute(ctx))));
-        }
-        else if constexpr (type == binary_node_type::assignment) {
-            *get_pointer(left_->execute(ctx)) = op{}(get_value(left_->execute(ctx)),
-                                                      get_value(right_->execute(ctx)));
-            return 1;
-        }
-    }
-
-    std::string to_string() const {
-        if constexpr (type == binary_node_type::arithmetic) {
-            if constexpr (std::is_same_v<op, std::plus<int64_t>>)
-                return "+";
-            else if constexpr (std::is_same_v<op, std::minus<int64_t>>)
-                return "-";
-            else if constexpr (std::is_same_v<op, std::multiplies<int64_t>>)
-                return "*";
-            else if constexpr (std::is_same_v<op, std::divides<int64_t>>)
-                return "/";
-        }
-        else if constexpr (type == binary_node_type::assignment) {
-            if constexpr (std::is_same_v<op, std::plus<int64_t>>)
-                return "+=";
-            else if constexpr (std::is_same_v<op, std::minus<int64_t>>)
-                return "-=";
-            else if constexpr (std::is_same_v<op, std::multiplies<int64_t>>)
-                return "*=";
-            else if constexpr (std::is_same_v<op, std::divides<int64_t>>)
-                return "/=";
-        }
-        else if constexpr (type == binary_node_type::comparation) {
-            if constexpr (std::is_same_v<op, std::equal_to<int64_t>>)
-                return "==";
-            else if constexpr (std::is_same_v<op, std::less<int64_t>>)
-                return "&lt;";
-            else if constexpr (std::is_same_v<op, std::greater<int64_t>>)
-                return "&gt;";
-            else if constexpr (std::is_same_v<op, std::less_equal<int64_t>>)
-                return "&le;";
-            else if constexpr (std::is_same_v<op, std::greater_equal<int64_t>>)
-                return "&ge;";
-        }
-        return "?";
+        return create_value(op{}(get_value(left_->execute(ctx)),
+                                 get_value(right_->execute(ctx))));
     }
 
     void dump(std::ostream &ostr) const override {
-        ostr << to_string() << " (";
+        ostr << get_name() << " (";
         left_->dump(ostr);
         ostr << " ";
         right_->dump(ostr);
@@ -267,8 +282,8 @@ public:
     void dump_gv(std::ostream &ostr) const override {
         ostr << "    node" << this
              << "[shape=Mrecord, label=";
-        ostr << "\"" << to_string() << "\"";
-        ostr << ", style=filled, fillcolor=\"#" << std::hex << node_color << "\"];\n";
+        ostr << "\"" << get_name() << "\"";
+        ostr << ", style=filled, fillcolor=\"#9ACEEB\"];\n";
         ostr << "    node" << this
              << "->node" << left_.get() << " [color=\"#293133\"];\n";
         left_->dump_gv(ostr);
@@ -276,26 +291,98 @@ public:
              << "->node" << right_.get() << " [color=\"#293133\"];\n";
         right_->dump_gv(ostr);
     }
+
+protected:
+    std::unique_ptr<node> left_;
+    std::unique_ptr<node> right_;
 };
 
-using plus_node             = binary_node<std::plus<int64_t>,         0x9ACEEB, binary_node_type::arithmetic>;
-using minus_node            = binary_node<std::minus<int64_t>,        0x9ACEEB, binary_node_type::arithmetic>;
-using multiply_node         = binary_node<std::multiplies<int64_t>,   0x9ACEEB, binary_node_type::arithmetic>;
-using divide_node           = binary_node<std::divides<int64_t>,      0x9ACEEB, binary_node_type::arithmetic>;
+class plus_node final: public arithmetic_and_comparative_operator<plus_node, std::plus<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
 
-using plus_assign_node     = binary_node<std::plus<int64_t>,          0x9ACEEB, binary_node_type::assignment>;
-using minus_assign_node    = binary_node<std::minus<int64_t>,         0x9ACEEB, binary_node_type::assignment>;
-using multiply_assign_node = binary_node<std::multiplies<int64_t>,    0x9ACEEB, binary_node_type::assignment>;
-using divide_assign_node   = binary_node<std::divides<int64_t>,       0x9ACEEB, binary_node_type::assignment>;
+    const char* get_name() const {
+        return "+";
+    }
+};
 
-using equal_node           = binary_node<std::equal_to<int64_t>,      0xC5E384, binary_node_type::comparation>;
-using less_node            = binary_node<std::less<int64_t>,          0xC5E384, binary_node_type::comparation>;
-using bigger_node          = binary_node<std::greater<int64_t>,       0xC5E384, binary_node_type::comparation>;
-using less_or_equal_node   = binary_node<std::less_equal<int64_t>,    0xC5E384, binary_node_type::comparation>;
-using bigger_or_equal_node = binary_node<std::greater_equal<int64_t>, 0xC5E384, binary_node_type::comparation>;
+class minus_node final: public arithmetic_and_comparative_operator<minus_node, std::minus<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+        
+    const char* get_name() const {
+        return "-";
+    }
+};
+
+class multiply_node final: public arithmetic_and_comparative_operator<multiply_node, std::multiplies<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+
+    const char* get_name() const {
+        return "*";
+    }
+};
+
+class divide_node final: public arithmetic_and_comparative_operator<divide_node, std::divides<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+        
+    const char* get_name() const {
+        return "/";
+    }
+};
+
+class equal_node final: public arithmetic_and_comparative_operator<equal_node, std::equal_to<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+            
+    const char* get_name() const {
+        return "==";
+    }
+};
+
+class less_node final: public arithmetic_and_comparative_operator<less_node, std::less<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+                
+    const char* get_name() const {
+        return "&lt;";
+    }
+};
+
+class bigger_node final: public arithmetic_and_comparative_operator<bigger_node, std::greater<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+
+    const char* get_name() const {
+        return "&gt;";
+    }
+};
+
+class less_or_equal_node final: public arithmetic_and_comparative_operator<less_or_equal_node, 
+                                                                           std::less_equal<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+    
+    const char* get_name() const {
+        return "&le;";
+    }
+};
+
+class bigger_or_equal_node final: public arithmetic_and_comparative_operator<bigger_or_equal_node, 
+                                                                             std::greater_equal<int64_t>> {
+public:
+    using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
+        
+    const char* get_name() const {
+        return "&ge;";
+    }
+};
+
 
 template<bool is_loop>
-class conditional_operation_node: public node {
+class conditional_operation_node final: public node {
 public:
     explicit conditional_operation_node(std::unique_ptr<node> condition,
                                         std::vector<std::unique_ptr<node>> scope):
@@ -313,12 +400,12 @@ public:
         return 1;
     }
 
-    std::string to_string() const {
+    std::string get_name() const {
         return is_loop ? "while" : "if";
     }
 
     void dump(std::ostream &ostr) const override {
-        ostr << to_string() << " ((";
+        ostr << get_name() << " ((";
         condition_->dump(ostr);
         ostr << ")";
         for (const auto& i: scope_) {
