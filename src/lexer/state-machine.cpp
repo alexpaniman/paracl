@@ -63,6 +63,8 @@ uint8_t S1[CHAR_COUNT] = {
 };
 
 uint8_t S2[CHAR_COUNT] = {
+    // terminal id
+
     ['a'...'e'] = 1, // id
     ['g'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
@@ -76,6 +78,8 @@ uint8_t S3[CHAR_COUNT] = {
 };
 
 uint8_t S4[CHAR_COUNT] = {
+    // terminal id
+
     ['a'...'g'] = 1, // id
     ['i'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
@@ -85,6 +89,8 @@ uint8_t S4[CHAR_COUNT] = {
 };
 
 uint8_t S5[CHAR_COUNT] = {
+    // terminal id
+
     ['a'...'h'] = 1, // id
     ['j'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
@@ -94,6 +100,8 @@ uint8_t S5[CHAR_COUNT] = {
 };
 
 uint8_t S6[CHAR_COUNT] = {
+    // terminal id
+
     ['a'...'k'] = 1, // id
     ['m'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
@@ -103,6 +111,8 @@ uint8_t S6[CHAR_COUNT] = {
 };
 
 uint8_t S7[CHAR_COUNT] = {
+    // terminal id
+
     ['a'...'d'] = 1, // id
     ['f'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
@@ -210,12 +220,12 @@ uint8_t S29[CHAR_COUNT] = {
 generic_lexer::state lexer_states[] = {
     [0]  = { nullptr,  /*is_terminal=*/false,                                 },
     [1]  = { S1,       /*is_terminal=*/ true, token_type::ID                  },
-    [2]  = { S2,       /*is_terminal=*/false,                                 },
+    [2]  = { S2,       /*is_terminal=*/ true, token_type::ID                  },
     [3]  = { S3,       /*is_terminal=*/ true, token_type::IF                  },
-    [4]  = { S4,       /*is_terminal=*/false,                                 },
-    [5]  = { S5,       /*is_terminal=*/false,                                 },
-    [6]  = { S6,       /*is_terminal=*/false,                                 },
-    [7]  = { S7,       /*is_terminal=*/false,                                 },
+    [4]  = { S4,       /*is_terminal=*/ true, token_type::ID                  },
+    [5]  = { S5,       /*is_terminal=*/ true, token_type::ID                  },
+    [6]  = { S6,       /*is_terminal=*/ true, token_type::ID                  },
+    [7]  = { S7,       /*is_terminal=*/ true, token_type::ID                  },
     [8]  = { S8,       /*is_terminal=*/ true, token_type::WHILE               },
     [9]  = { S9,       /*is_terminal=*/ true, token_type::NUMBER              },
     [10] = { S10,      /*is_terminal=*/ true, token_type::ASSIGN              },

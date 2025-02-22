@@ -135,5 +135,28 @@ TEST_CASE("tokenize basic input") {
 
         REQUIRE_THROWS(tokenize(input));
     }
+
+    SECTION("failing paracl example") {
+        std::string input = R"(
+            i
+            if
+            w
+            wh
+            whi
+            whil
+            while
+        )";
+
+        auto tokens = tokenize(input);
+        REQUIRE(tokens.size() == 7);
+
+        IS_SAME(tokens[0], "ID{i}");
+        IS_SAME(tokens[1], "IF");
+        IS_SAME(tokens[2], "ID{w}");
+        IS_SAME(tokens[3], "ID{wh}");
+        IS_SAME(tokens[4], "ID{whi}");
+        IS_SAME(tokens[5], "ID{whil}");
+        IS_SAME(tokens[6], "WHILE");
+    }
 }
 
