@@ -72,12 +72,17 @@ public:
 
     int64_t execute(context &ctx) override {
         if (name_ == "print") {
-            for (const auto& i: args_) {
-                std::cout << get_value(i->execute(ctx)) << " ";
+            bool first = true;
+            for (const auto& arg : args_) {
+                if (!first) {
+                    std::cout << " ";
+                }
+                std::cout << get_value(arg->execute(ctx));
+                first = false;
             }
             std::cout << std::endl;
             return 1;
-        }
+        }        
         return 0; //остальные функции пока не реализованы
     }
 

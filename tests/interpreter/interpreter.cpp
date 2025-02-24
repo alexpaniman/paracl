@@ -40,7 +40,7 @@ TEST_CASE("run ParaCL program") {
         ast.run();
 
         std::cout.rdbuf(old_cout);
-        REQUIRE(output.str() == "1 \n2 \n6 \n24 \n120 \n");
+        REQUIRE(output.str() == "1\n2\n6\n24\n120\n");
     }
 
     SECTION("fibonacci") {
@@ -71,7 +71,7 @@ TEST_CASE("run ParaCL program") {
         ast.run();
 
         std::cout.rdbuf(old_cout);
-        REQUIRE(output.str() == "21 \n");
+        REQUIRE(output.str() == "21\n");
     }
 
     SECTION("number of even digits") {
@@ -98,7 +98,7 @@ TEST_CASE("run ParaCL program") {
         ast.run();
 
         std::cout.rdbuf(old_cout);
-        REQUIRE(output.str() == "5 \n");
+        REQUIRE(output.str() == "5\n");
     }
 
     SECTION("complex expression") {
@@ -117,6 +117,6 @@ TEST_CASE("run ParaCL program") {
         ast.run();
 
         std::cout.rdbuf(old_cout);
-        REQUIRE(output.str() == "-27 \n");
+        REQUIRE(output.str() == "-27\n");
     }
 }
