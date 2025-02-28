@@ -75,6 +75,10 @@ uint8_t S2[CHAR_COUNT] = {
 
 uint8_t S3[CHAR_COUNT] = {
     // terminal if
+
+    ['a'...'z'] = 1, // id
+    ['0'...'9'] = 1, // id
+    ['_'] = 1, // id
 };
 
 uint8_t S4[CHAR_COUNT] = {
@@ -123,6 +127,10 @@ uint8_t S7[CHAR_COUNT] = {
 
 uint8_t S8[CHAR_COUNT] = {
     // terminal while
+
+    ['a'...'z'] = 1, // id
+    ['0'...'9'] = 1, // id
+    ['_'] = 1, // id
 };
 
 uint8_t S9[CHAR_COUNT] = {
