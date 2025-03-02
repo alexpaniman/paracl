@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <variant>
 #include <string>
@@ -205,16 +206,17 @@ public:
     template <typename... format_args>
     void append(std::format_string<format_args...> fmt, format_args&&... args) {
         std::format_to(std::back_inserter(text_), fmt, std::forward<format_args>(args)...);
-
-        if (!current_overlay_)
-            return;
-
-        current_overlay_->end = text_.size();
     }
 
     void clear_formatting() {
-        if (current_overlay_)
-            overlays_.push_back(*current_overlay_);
+        if (current_overlay_) {
+            if (current_overlay_->begin != text_.size()) {
+                current_overlay_->end = text_.size();
+                overlays_.push_back(*current_overlay_);
+            }
+
+            current_overlay_ = std::nullopt;
+        }
     }
 
     void set_formatting(ansi_formatting formatting) {
@@ -223,39 +225,41 @@ public:
     }
 
     void set_foreground(ansi_color foreground) {
-        set_formatting({ .foreground_color = foreground });
+        get_or_create_overlay().formatting.foreground_color = foreground;
     }
 
     void set_background(ansi_color background) {
-        set_formatting({ .background_color = background });
+        get_or_create_overlay().formatting.background_color = background;
     }
 
     void set_attribute(ansi_attribute attribute) {
-        set_formatting({ .attribute = attribute });
+        get_or_create_overlay().formatting.attribute = attribute;
     }
 
     void print() {
         bool should_colorize = isatty(fileno(stdout));
+        bool should_reset = false;
 
-        size_t open_index = 0, stop_index = 0;
+        size_t overlay_index = 0;
         for (size_t i = 0; i < text_.size(); ++ i) {
             if (should_colorize) {
-                bool should_end = false;
-                while (stop_index < overlays_.size() && overlays_[stop_index].end >= i) {
-                    should_end = true;
-                    ++ stop_index;
-                }
-
-                if (should_end)
-                    std::cout << RESET_SEQUENCE;
-
-                while (open_index < overlays_.size() && overlays_[open_index].begin < i) {
-                    std::cout << overlays_[open_index].formatting.get_ansi_code();
-                    ++ open_index;
+                if (overlay_index < overlays_.size() && i == overlays_[overlay_index].begin) {
+                    std::cout << overlays_[overlay_index].formatting.get_ansi_code();
+                    should_reset = true;
                 }
             }
 
             std::cout << text_[i];
+
+            if (should_colorize) {
+                if (overlay_index < overlays_.size() && i + 1 == overlays_[overlay_index].end) {
+                    assert(should_reset && "overlay ended but haven't begun");
+                    should_reset = false;
+
+                    std::cout << RESET_SEQUENCE;
+                    overlay_index ++;
+                }
+            }
         }
     }
 
@@ -271,6 +275,15 @@ private:
     std::optional<ansi_overlay> current_overlay_;
 
     static inline constexpr std::string RESET_SEQUENCE = "\033[0m";
+
+    ansi_overlay& get_or_create_overlay() {
+        if (current_overlay_)
+            return *current_overlay_;
+
+        set_formatting({});
+        return *current_overlay_;
+    }
+
 };
 
 } // end namespace paracl
