@@ -1,5 +1,6 @@
 #include "paracl/text/display.h"
 #include "paracl/text/ansi.h"
+#include "paracl/text/colors.h"
 
 #include <cstdint>
 #include <span>
@@ -52,8 +53,6 @@ bool print_annotations(colored_text_stream &stream,
                        annotation_config cfg,
                        bool dry_run = false) {
 
-    stream.set_formatting(cfg.line);
-
     bool has_annotations = false;
     for (size_t i = start; i < end; ++ i) {
         bool beginning = false;
@@ -79,11 +78,14 @@ bool print_annotations(colored_text_stream &stream,
         if (!dry_run) {
             if (!inside)
                 stream.append(" ");
-            else
-            if (beginning && should_connect)
-                stream.append("┬");
             else {
-                stream.append("─");
+                stream.set_formatting(cfg.line);
+                if (beginning && should_connect)
+                    stream.append("^");
+                else {
+                    stream.append("~");
+                }
+                stream.clear_formatting();
             }
         }
 
@@ -91,7 +93,6 @@ bool print_annotations(colored_text_stream &stream,
     }
 
     if (!dry_run) {
-        stream.clear_formatting();
         stream.append("\n");
     }
 
@@ -129,8 +130,6 @@ void print_messages(colored_text_stream &stream,
     for (int j = ranges.size() - 1; j >= 0; -- j) {
         print_line_number(stream, 5, "");
 
-        stream.append("{}", GREEN);
-
         size_t current_column = 0;
         for (int i = 0; i <= j; ++ i) {
             auto &[pos, annotation] = ranges[i];
@@ -145,12 +144,16 @@ void print_messages(colored_text_stream &stream,
                     max_column = current_column;
 
                 if (current_column < max_column) {
-                    stream.append("└");
+                    stream.set_foreground(ansi_preset_color::GREEN);
+                    stream.append("+");
+                    stream.clear_formatting();
                     ++ current_column;
                 }
 
                 while (current_column < max_column) {
-                    stream.append("─");
+                    stream.set_foreground(ansi_preset_color::GREEN);
+                    stream.append("-");
+                    stream.clear_formatting();
                     ++ current_column;
                 }
 
@@ -158,14 +161,14 @@ void print_messages(colored_text_stream &stream,
 
                 current_column += annotation.size() + 1;
             } else {
-                stream.append("│");
+                stream.set_foreground(ansi_preset_color::GREEN);
+                stream.append("|");
+                stream.clear_formatting();
                 ++ current_column;
             }
         }
 
-        stream.clear_formatting();
-
-        std::cout << "\n";
+        stream.append("\n");
     }
 
     print_line_number(stream, 5, "");
