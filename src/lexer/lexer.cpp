@@ -88,10 +88,10 @@ void display_tokens(file source, message_type type, std::string message, std::in
 
 
     annotation_config cfg {
-        .line = { .foreground_color = ansi_preset_color::GREEN }
+        .line = { .foreground_color = colored_text::color::GREEN }
     };
 
-    colored_text_stream stream;
+    colored_text stream;
     print_range(stream, source.text, std::move(annotated_ranges), cfg);
 
     stream.print();

@@ -1,6 +1,6 @@
 #include "paracl/text/display.h"
 #include "paracl/text/ansi.h"
-#include "paracl/text/colors.h"
+#include "paracl/text/colored-text.h"
 
 #include <cstdint>
 #include <span>
@@ -25,7 +25,7 @@ int32_t get_previous_iter_line(text_position pos) {
     return pos.line - (pos.column == 0 ? 1 : 0);
 }
 
-void print_line(colored_text_stream &stream, std::span<char> text, int32_t &i) {
+void print_line(colored_text &stream, std::span<char> text, int32_t &i) {
     int32_t size = text.size();
 
     while (true) {
@@ -47,7 +47,7 @@ void print_line(colored_text_stream &stream, std::span<char> text, int32_t &i) {
         stream.append("\n");
 }
 
-bool print_annotations(colored_text_stream &stream,
+bool print_annotations(colored_text &stream,
                        size_t start, size_t end,
                        std::span<annotated_range> ranges,
                        annotation_config cfg,
@@ -114,14 +114,14 @@ auto get_join_points(std::vector<annotated_range> ranges, size_t line) {
     return line_ranges;
 }
 
-void print_line_number(colored_text_stream &stream,
+void print_line_number(colored_text &stream,
                        int32_t line_numbers_space, auto line) {
 
     (void) line_numbers_space;
     stream.append("{:>5} | ", line);
 }
 
-void print_messages(colored_text_stream &stream,
+void print_messages(colored_text &stream,
                     std::vector<annotated_point> ranges, size_t column_alignment = 0) {
 
     std::sort(ranges.begin(), ranges.end());
@@ -144,14 +144,14 @@ void print_messages(colored_text_stream &stream,
                     max_column = current_column;
 
                 if (current_column < max_column) {
-                    stream.set_foreground(ansi_preset_color::GREEN);
+                    stream.set_foreground(colored_text::color::GREEN);
                     stream.append("+");
                     stream.clear_formatting();
                     ++ current_column;
                 }
 
                 while (current_column < max_column) {
-                    stream.set_foreground(ansi_preset_color::GREEN);
+                    stream.set_foreground(colored_text::color::GREEN);
                     stream.append("-");
                     stream.clear_formatting();
                     ++ current_column;
@@ -161,7 +161,7 @@ void print_messages(colored_text_stream &stream,
 
                 current_column += annotation.size() + 1;
             } else {
-                stream.set_foreground(ansi_preset_color::GREEN);
+                stream.set_foreground(colored_text::color::GREEN);
                 stream.append("|");
                 stream.clear_formatting();
                 ++ current_column;
@@ -178,7 +178,7 @@ void print_messages(colored_text_stream &stream,
 } // end anonymous namespace
 
 
-void print_range(colored_text_stream &stream,
+void print_range(colored_text &stream,
                  std::span<char> text,
                  std::vector<annotated_range> ranges,
                  annotation_config cfg) {
