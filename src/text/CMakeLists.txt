@@ -4,4 +4,5 @@ add_paracl_library(
   SOURCES
   file.cpp
   display.cpp
+  colored-text.cpp
 )

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "paracl/text/colors.h"
+#include "paracl/text/colored-text.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -89,14 +89,14 @@ struct annotated_range {
 }; 
 
 struct annotation_config {
-    ansi_formatting line = {};
-    ansi_formatting file = {};
-    ansi_formatting nums = {};
+    colored_text::formatting line = {};
+    colored_text::formatting file = {};
+    colored_text::formatting nums = {};
     size_t show_before = 0, show_after = 0;
 };
 
 
-void print_range(colored_text_stream &stream,
+void print_range(colored_text &stream,
                  std::span<char> text,
                  std::vector<annotated_range> ranges,
                  annotation_config cfg);
@@ -159,10 +159,10 @@ struct file {
         std::cout << filename << ":" << ranges[0].range.begin.line << ":" << ranges[0].range.begin.column << ": " << message << "\n";
 
         annotation_config cfg {
-            .line = { .foreground_color = ansi_preset_color::GREEN }
+            .line = { .foreground_color = colored_text::color::GREEN }
         };
 
-        colored_text_stream stream;
+        colored_text stream;
         print_range(stream, text, ranges, cfg);
 
         stream.print();
