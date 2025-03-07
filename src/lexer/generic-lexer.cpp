@@ -1,4 +1,5 @@
 #include "paracl/lexer/generic-lexer.h"
+#include "paracl/text/colored-text.h"
 
 #include <cassert>
 #include <cstdint>

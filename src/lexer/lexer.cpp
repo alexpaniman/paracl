@@ -3,8 +3,6 @@
 #include "paracl/lexer/token.h"
 
 #include "paracl/text/display.h"
-#include "paracl/text/ansi.h"
-
 #include "state-machine.h"
 
 #include <cassert>
@@ -61,40 +59,6 @@ std::string describe_token(token tok) {
 void print_tokens(std::span<token> tokens) {
     for (const token &tok: tokens)
         std::cout << describe_token(tok) << "\n";
-}
-
-// Function to print messages with colors
-void print_message(const std::string& type, const std::string& message, const std::string& color) {
-    std::cout << BOLD << color << type << RESET << ": " << message << std::endl;
-}
-
-
-void display_tokens(file source, message_type type, std::string message, std::initializer_list<annotated_token> ranges) {
-    assert(ranges.size() != 0);
-
-    std::vector<annotated_range> annotated_ranges;
-    for (const auto &[tok, annotation]: ranges)
-        annotated_ranges.push_back({tok.range, annotation});
-
-    auto &begin_range = annotated_ranges[0].range.begin;
-
-    std::cout << source.filename << ":" << begin_range.line << ":" << begin_range.column << " ";
-
-    switch (type) {
-    case message_type::NOTE:    print_message("note",    message, CYAN);   break;
-    case message_type::ERROR:   print_message("error",   message, RED);    break;
-    case message_type::WARNING: print_message("warning", message, YELLOW); break;
-    }
-
-
-    annotation_config cfg {
-        .line = { .foreground_color = colored_text::color::GREEN }
-    };
-
-    colored_text stream;
-    print_range(stream, source.text, std::move(annotated_ranges), cfg);
-
-    stream.print();
 }
 
 } // end namespace paracl
