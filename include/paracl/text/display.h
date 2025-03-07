@@ -1,6 +1,7 @@
 #pragma once
 
 #include "paracl/text/colored-text.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -88,20 +89,6 @@ struct annotated_range {
     }
 }; 
 
-struct annotation_config {
-    colored_text::formatting line = {};
-    colored_text::formatting file = {};
-    colored_text::formatting nums = {};
-    size_t show_before = 0, show_after = 0;
-};
-
-
-void print_range(colored_text &stream,
-                 std::span<char> text,
-                 std::vector<annotated_range> ranges,
-                 annotation_config cfg);
-
-
 
 template <typename type>
 struct rngable {};
@@ -147,26 +134,7 @@ struct file {
     std::string filename;
     std::string text;
 
-    void message(const std::string &message, std::vector<rng> rngs) {
-        assert(rngs.size() != 0);
-
-        std::vector<annotated_range> ranges;
-        for (auto rng: rngs)
-            ranges.push_back(rng.actual_range);
-
-        std::sort(ranges.begin(), ranges.end());
-
-        std::cout << filename << ":" << ranges[0].range.begin.line << ":" << ranges[0].range.begin.column << ": " << message << "\n";
-
-        annotation_config cfg {
-            .line = { .foreground_color = colored_text::color::GREEN }
-        };
-
-        colored_text stream;
-        print_range(stream, text, ranges, cfg);
-
-        stream.print();
-    }
+    void message(const std::string &message, std::vector<rng> rngs);
 };
 
 

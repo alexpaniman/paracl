@@ -48,7 +48,7 @@ void colored_text::set_attribute(colored_text::attribute attribute) {
     set_formatting({ .attribute = attribute });
 }
 
-void colored_text::print() {
+void colored_text::print() const {
     bool should_colorize = isatty(fileno(stdout));
     bool should_reset = false;
 

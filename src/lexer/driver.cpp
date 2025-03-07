@@ -1,5 +1,4 @@
 #include "paracl/lexer/lexer.h"
-#include "paracl/text/ansi.h"
 #include "paracl/text/display.h"
 #include "paracl/text/file.h"
 
@@ -20,7 +19,6 @@ int main(int argc, const char *argv[]) {
     std::vector<paracl::rng> rngs;
     for (size_t i = 0; i < tokens.size() -3; ++ i) {
         std::stringstream ss;
-        ss << paracl::BOLD << paracl::CYAN << "note: " << paracl::RESET;
         ss << "printing token #" << i;
 
         std::string description = paracl::describe_token(tokens[i]);

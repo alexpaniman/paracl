@@ -32,15 +32,5 @@ struct annotated_token {
     std::string annotation;
 };
 
-
-enum class message_type {
-    NOTE,
-    WARNING,
-    ERROR
-};
-
-void display_tokens(file source, message_type type, std::string message, std::initializer_list<annotated_token> ranges);
-
-
 } // end namespace paracl
 

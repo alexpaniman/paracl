@@ -5,4 +5,5 @@ add_paracl_library(
   file.cpp
   display.cpp
   colored-text.cpp
+  text-annotator.cpp
 )
