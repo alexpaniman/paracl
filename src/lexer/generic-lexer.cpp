@@ -1,15 +1,20 @@
 #include "paracl/lexer/generic-lexer.h"
+#include "paracl/lexer/token.h"
 #include "paracl/text/colored-text.h"
+#include "paracl/text/display.h"
+#include "paracl/text/text-annotator.h"
 
 #include <cassert>
 #include <stdexcept>
+#include <vector>
 
 
 namespace paracl {
 
 generic_lexer::generic_lexer(const generic_lexer::state *states, std::span<char> text):
     states_(states),
-    iter_(text.begin()), end_(text.end()),
+    begin_(text.begin()), end_(text.end()),
+    iter_(text.begin()),
     position_{/*point=*/0, /*line=*/1, /*column=*/0},
     current_state_id_(INITIAL_STATE),
     last_terminal_(SKIP, {position_, position_}, text) {
@@ -19,11 +24,9 @@ generic_lexer::generic_lexer(const generic_lexer::state *states, std::span<char>
 
 auto generic_lexer::emit_token() -> std::optional<token> {
     if (last_terminal_.text.empty())
-        return {};
+        return std::nullopt;
 
-    std::optional<token> result = std::nullopt;
-    if (last_terminal_.type != SKIP)
-        result = last_terminal_;
+    token result = last_terminal_;
 
     last_terminal_.text = {
         last_terminal_.text.end(),
@@ -34,6 +37,10 @@ auto generic_lexer::emit_token() -> std::optional<token> {
     current_state_id_ = INITIAL_STATE;
 
     last_terminal_.range.begin = position_;
+
+    tokens_.emplace_back(result);
+    if (last_terminal_.type == SKIP)
+        return std::nullopt;
 
     return result;
 }
@@ -57,6 +64,22 @@ auto generic_lexer::advance() -> void {
     ++ position_.column;
 }
 
+
+auto generic_lexer::record_error_and_skip_it() -> void {
+    text_position error_position = position_;
+    advance();
+
+    if (errors_.empty() || errors_.back().end != error_position) {
+        errors_.emplace_back(error_position, position_);
+        return;
+    }
+
+    errors_.back() = {
+        errors_.back().begin,
+        position_
+    };
+}
+
 auto generic_lexer::tokenize_next() -> std::optional<token> {
     while (iter_ != end_) {
         const state::id *transitions = states_[current_state_id_].transitions;
@@ -72,7 +95,7 @@ auto generic_lexer::tokenize_next() -> std::optional<token> {
 
             // Nothing changed, we're in an infinite loop
             if (previous_state == current_state_id_)
-                throw std::runtime_error("error");
+                record_error_and_skip_it();
 
             continue;
         }
@@ -100,6 +123,24 @@ auto generic_lexer::tokenize() -> std::vector<token> {
         tokens.push_back(*emitted);
 
     return tokens;
+}
+    
+auto generic_lexer::make_error_report() -> std::optional<colored_text> {
+    if (errors_.empty())
+        return std::nullopt;
+
+    std::vector<annotated_range> ranges;
+
+    for (text_range error: errors_) {
+        ranges.emplace_back(error, "unexpected character(s)");
+    }
+
+    for (token current_token: tokens_) {
+        if (current_token.type != 0) // TODO: 0?
+            ranges.emplace_back(current_token.range, "");
+    }
+
+    return annotate(std::span<char>{begin_, end_}, std::move(ranges));
 }
 
 } // end namespace paracl

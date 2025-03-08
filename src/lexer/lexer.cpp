@@ -40,6 +40,10 @@ std::vector<token> tokenize(std::span<char> input) {
         tokens.push_back({type, tok->range, {}});
     }
 
+    std::optional<colored_text> error_report = lexer.make_error_report();
+    if (error_report)
+        error_report->print();
+
     return tokens;
 }
 

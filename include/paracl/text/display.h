@@ -29,6 +29,9 @@ struct text_position {
         return point <=> other.point;
     }
 
+    bool operator==(const text_position &other) const = default;
+    bool operator!=(const text_position &other) const = default;
+
     static text_position from_point(std::span<char> text, int32_t point) {
         assert(point >= 0);
         assert(!text.empty());
