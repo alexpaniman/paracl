@@ -49,8 +49,8 @@ inline constexpr annotation_arrow_config clang_arrow = {
 ///   leftwards_upwards_join ^^
 ///                           leftwards_line
 inline constexpr annotation_arrow_config box_arrow = {
-    .underline_connection = "┬",
-    .underline = "─",
+    .underline_connection = "^",
+    .underline = "~",
     .upwards_line = "│",
     .leftwards_upwards_join = "└",
     .leftwards_line = "─",

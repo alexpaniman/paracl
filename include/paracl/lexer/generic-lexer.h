@@ -46,19 +46,27 @@ public:
     generic_lexer(const state *states, std::span<char> text);
 
     std::optional<token> tokenize_next();
-    std::vector<token> tokenize();
+    std::vector<token> tokenize(); // TODO: useless? better name: tokenize_rest
+
+    std::optional<colored_text> make_error_report();
 
 private:
     const state *states_;
     static inline constexpr int INITIAL_STATE = 30; // TODO: fix
 
-    std::span<char>::iterator iter_, end_;
+    std::span<char>::iterator begin_, end_;
+    std::span<char>::iterator iter_;
     text_position position_;
 
     state::id current_state_id_;
     token last_terminal_;
 
+    std::vector<text_range> errors_;
+    std::vector<token> tokens_; // TODO: lexer probably shouldn't store this, now it's only for error reporting
+
     std::optional<token> emit_token();
+
+    void record_error_and_skip_it();
     void advance();
 };
 

@@ -82,7 +82,7 @@ private:
             bool beginning = false;
             bool inside = false;
 
-            bool should_connect = false;
+            // bool should_connect = false;
 
             for (size_t j = 0; j < ranges_.size(); ++ j) {
                 if (i <  ranges_[j].range.begin.point)
@@ -92,7 +92,7 @@ private:
                     inside = true;
                     beginning = true;
 
-                    should_connect |= !ranges_[j].annotation.empty();
+                    // should_connect |= !ranges_[j].annotation.empty();
                     continue;
                 }
 
@@ -108,7 +108,7 @@ private:
             if (!inside)
                 annotated_text_.append(" ");
             else {
-                if (beginning && should_connect)
+                if (beginning)
                     append_arrow_part(config_.arrow_config.underline_connection);
                 else {
                     append_arrow_part(config_.arrow_config.underline);
