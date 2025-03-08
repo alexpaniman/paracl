@@ -69,23 +69,11 @@ private:
     void print_line(int32_t &i) {
         int32_t size = text_.size();
 
-        while (true) {
-            if (i > size)
-                break;
-
+        for (; i < size && text_[i] != '\n'; ++ i)
             annotated_text_.append("{}", text_[i]);
 
-            if (text_[i] == '\n')
-                break;
-
-            ++ i;
-        }
-
-        if (text_[i] == '\n')
-            ++ i;
-
-        if (i > size)
-            annotated_text_.append("\n");
+        ++ i;
+        annotated_text_.append("\n");
     }
 
     bool print_annotations(size_t start, size_t end, bool dry_run = false) {
