@@ -29,11 +29,15 @@ add_compile_options(-Wall -Wextra -Werror)
 include(CTest)
 enable_testing()
 
-
 set_property(GLOBAL PROPERTY paracl_tests_property "")
+set_property(GLOBAL PROPERTY paracl_fuzz_property "")
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    message(WARNING "Fuzz tests are disabled, they don't work with any compilers but Clang")
+endif()
+
 
 macro(add_paracl_library target_name)
-    cmake_parse_arguments(ARG "" "TOOL" "SOURCES;LIBRARIES;TESTS" ${ARGN})
+    cmake_parse_arguments(ARG "" "TOOL" "SOURCES;LIBRARIES;TESTS;FUZZ" ${ARGN})
 
     if(NOT DEFINED ARG_LIBRARIES AND ARG_LIBRARIES STREQUAL "")
         message(FATAL_ERROR "SOURCES have to be provided for target ${target_name}")
@@ -65,6 +69,24 @@ macro(add_paracl_library target_name)
 
             set_property(GLOBAL PROPERTY paracl_tests_property "${paracl_tests}")
         endforeach()
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        if(DEFINED ARG_FUZZ AND NOT ARG_FUZZ STREQUAL "")
+            foreach(fuzz IN LISTS ARG_FUZZ)
+                get_filename_component(fuzz_name ${fuzz} NAME_WE)
+
+                add_executable(${fuzz_name} "${PROJECT_SOURCE_DIR}/fuzz/${target_name}/${fuzz}")
+                target_compile_options(${fuzz_name} PRIVATE -g3 -fsanitize=fuzzer,address,undefined,leak)
+                target_link_libraries(${fuzz_name} PRIVATE -fsanitize=fuzzer,address,undefined,leak)
+                target_link_libraries(${fuzz_name} PRIVATE ${target_name})
+
+                get_property(paracl_fuzz GLOBAL PROPERTY paracl_fuzz_property)
+                list(APPEND paracl_fuzz ${fuzz_name})
+
+                set_property(GLOBAL PROPERTY paracl_fuzz_property "${paracl_fuzz}")
+            endforeach()
+        endif()
     endif()
 
     if(DEFINED ARG_TOOL AND NOT ARG_TOOL STREQUAL "")

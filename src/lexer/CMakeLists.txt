@@ -15,4 +15,7 @@ add_paracl_library(
 
   TOOL
   driver.cpp
+
+  FUZZ
+  fuzz-lexer.cpp
 )
