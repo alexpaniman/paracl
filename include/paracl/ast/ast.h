@@ -31,15 +31,17 @@ public:
     }
 
     void dump_gv(std::ostream &ostr = std::cout) const {
-        ostr << "digraph structs {\n";
-        ostr << "    node" << this << "[shape=Mrecord, label= \"{program}\", "
-             << "style=filled, fillcolor=\"#F8EDA2\"]\n";
-        for (const auto& i : scope_) {
-            ostr << "    node" << this << "->node" << i.get()
-                 << " [color = \"#293133\"]\n";
-            i->dump_gv(ostr);
+        graphviz graph{};
+
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::conditional, node_id, "program");
+        for (const auto& i: scope_) {
+            size_t child_id = reinterpret_cast<size_t>(i.get());
+            graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+            i->dump_gv(graph);
         }
-        ostr << "}";
+
+        graph.print(ostr);
     }
 
 private:

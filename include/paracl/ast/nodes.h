@@ -2,10 +2,12 @@
 
 #include "paracl/ast/context.h"
 #include "paracl/ast/marked_pointers.h"
+#include "paracl/graphviz/ast_utils.h"
 
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <string>
 #include <functional>
 #include <iomanip>
 
@@ -15,7 +17,7 @@ namespace paracl {
 class node {
 public:
     virtual int64_t execute(context &ctx) = 0;
-    virtual void dump_gv(std::ostream &ostr) const = 0;
+    virtual void dump_gv(graphviz &graph) const = 0;
     virtual void dump(std::ostream &ostr) const = 0;
     virtual ~node() = default;
 };
@@ -33,9 +35,9 @@ public:
         ostr << value_;
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{" << value_
-             << "}\", style = \"filled\", fillcolor = \"#EAA9D6\"];\n";
+    void dump_gv(graphviz &graph) const override {
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::number, node_id, std::to_string(value_));
     }
 
 private:
@@ -56,9 +58,9 @@ public:
         ostr << name_;
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{" << name_
-             << "}\", style = \"filled\", fillcolor = \"#EAA9D6\"];\n";
+    void dump_gv(graphviz &graph) const override {
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::id, node_id, name_);
     }
 
 private:
@@ -95,13 +97,14 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape=Mrecord, label=\"{" << name_
-             << "}\", style=filled, fillcolor=\"#CC9CFF\"]\n";
+    void dump_gv(graphviz &graph) const override {
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::function, node_id, name_);
+
         for (const auto& i: args_) {
-            ostr << "    node" << this << "->node" << i.get()
-                 << " [color = \"#293133\"]\n";
-            i->dump_gv(ostr);
+            size_t child_id = reinterpret_cast<size_t>(i.get());
+            graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+            i->dump_gv(graph);
         }
     }
 
@@ -138,15 +141,17 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{" << get_name() << "}\", "
-             << "style = \"filled\", fillcolor = \"#9ACEEB\"];\n";
+    void dump_gv(graphviz &graph) const override {
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::assignment, node_id, get_name());
 
-        ostr << "    node" << this << "->node" << left_.get() << " [color = \"#293133\"];\n";
-        left_->dump_gv(ostr);
+        size_t child_id = reinterpret_cast<size_t>(left_.get());
+        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+        left_->dump_gv(graph);
 
-        ostr << "    node" << this << "->node" << right_.get() << " [color = \"#293133\"];\n";
-        right_->dump_gv(ostr);
+        child_id = reinterpret_cast<size_t>(right_.get());
+        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+        right_->dump_gv(graph);
     }
 
 protected:
@@ -239,13 +244,13 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this
-             << "[shape=Mrecord, label=\"{" << get_name()
-             << "}\", style=filled, fillcolor=\"#9ACEEB\"];\n";
-        ostr << "    node" << this
-             << "->node" << child_.get() << " [color=\"#293133\"];\n";
-        child_->dump_gv(ostr);
+    void dump_gv(graphviz &graph) const override {
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::negation, node_id, get_name());
+
+        size_t child_id = reinterpret_cast<size_t>(child_.get());
+        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+        child_->dump_gv(graph);
     }
 
 private:
@@ -284,17 +289,17 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this
-             << "[shape=Mrecord, label=";
-        ostr << "\"" << get_name() << "\"";
-        ostr << ", style=filled, fillcolor=\"#9ACEEB\"];\n";
-        ostr << "    node" << this
-             << "->node" << left_.get() << " [color=\"#293133\"];\n";
-        left_->dump_gv(ostr);
-        ostr << "    node" << this
-             << "->node" << right_.get() << " [color=\"#293133\"];\n";
-        right_->dump_gv(ostr);
+    void dump_gv(graphviz &graph) const override {
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::arithmetic_and_comparative, node_id, get_name());
+
+        size_t child_id = reinterpret_cast<size_t>(left_.get());
+        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+        left_->dump_gv(graph);
+
+        child_id = reinterpret_cast<size_t>(right_.get());
+        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+        right_->dump_gv(graph);
     }
 
 protected:
@@ -421,17 +426,18 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
+    void dump_gv(graphviz &graph) const override {
         std::string label = is_loop ? "while" : "if";
-        ostr << "    node" << this << "[shape=Mrecord, label=\"{" << label
-             << "}\", style=filled, fillcolor=\"#F8EDA2\"]\n";
-        ostr << "    node" << this << "->node" << condition_.get()
-             << " [color = \"#FF2B2B\"]\n";
-        condition_->dump_gv(ostr);
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::conditional, node_id, label);
+
+        size_t child_id = reinterpret_cast<size_t>(condition_.get());
+        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+        condition_->dump_gv(graph);
         for (const auto& i: scope_) {
-            ostr << "    node" << this << "->node" << i.get()
-                 << " [color = \"#293133\"]\n";
-            i->dump_gv(ostr);
+            child_id = reinterpret_cast<size_t>(i.get());
+            graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
+            i->dump_gv(graph);
         }
     }
 
@@ -457,9 +463,9 @@ public:
         ostr << "scan";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{scan}\", "
-             << "style = \"filled\", fillcolor = \"#EAA9D6\"];\n";
+    void dump_gv(graphviz &graph) const override {
+        size_t node_id = reinterpret_cast<size_t>(this);
+        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::scan, node_id, "scan");
     }
 };
 

@@ -7,6 +7,7 @@ add_paracl_library(
   LIBRARIES
   lexer
   text
+  graphviz
   parser
 
   TESTS
