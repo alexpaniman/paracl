@@ -16,13 +16,12 @@ enum class ast_node_type {
     scan
 };
 
-class ast_node final {
-public:
-    std::string id_;
-    ast_node_type type_;
-    std::string label_;
+graphviz::node create_ast_node(ast_node_type type, size_t index, const std::string& label);
+
+enum class ast_edge_type {
+    default_edge
 };
 
-graphviz::node ast_style(const ast_node& ast_node);
+graphviz::edge create_ast_edge(ast_edge_type type, size_t from, size_t to, const std::string& label);
 
 } // end namespace paracl
