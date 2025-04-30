@@ -10,6 +10,41 @@
 namespace paracl {
 
 class graphviz final {
+    public:
+    template <auto create_node, typename node_type>
+    void insert_node(node_type type, size_t index, const std::string& label) {
+        static_assert(std::is_same_v<decltype(create_node(type, index, label)), node>);
+        nodes_.push_back(create_node(type, index, label));
+    }
+
+    template <auto create_edge, typename edge_type>
+    void insert_edge(edge_type type, size_t from, size_t to, const std::string& label) {
+        static_assert(std::is_same_v<decltype(create_edge(type, from, to, label)), edge>);
+        edges_.push_back(create_edge(type, from, to, label));  
+    }
+
+    void print(std::ostream &ostr = std::cout) {
+        ostr << "digraph structs {\n";
+
+        for(auto node: nodes_) {
+            //надо будет сделать проверку find в каждом hash
+            ostr << "    node" << node.index_ 
+                 << "[shape = " << graphviz_node_shapes.at(node.shape_)
+                 << ", label = \"{" << node.label_
+                 << "}\", style = " << graphviz_styles.at(node.style_)
+                 << ", fillcolor = \"" << graphviz_colors.at(node.color_) << "\"];\n";
+        }
+        for(auto edge: edges_) {
+            //надо будет сделать проверку find в каждом hash
+            ostr << "    node" << edge.from_ 
+                 << "->node" << edge.to_
+                 << "[style = " << graphviz_styles.at(edge.style_)
+                 << ", fillcolor = \"" << graphviz_colors.at(edge.color_) << "\"];\n";
+        }
+
+        ostr << "}";
+    }
+
 public:
     class node {
     public:
@@ -50,41 +85,6 @@ public:
 private:
     std::list<node> nodes_;
     std::list<edge> edges_;
-
-public:
-    template <typename node_type, auto create_node>
-    void insert_node(node_type type, size_t index, const std::string& label) {
-        static_assert(std::is_same_v<decltype(create_node(type, index, label)), node>);
-        nodes_.push_back(create_node(type, index, label));
-    }
-
-    template <typename edge_type, auto create_edge>
-    void insert_edge(edge_type type, size_t from, size_t to, const std::string& label) {
-        static_assert(std::is_same_v<decltype(create_edge(type, from, to, label)), edge>);
-        edges_.push_back(create_edge(type, from, to, label));  
-    }
-
-    void print(std::ostream &ostr = std::cout) {
-        ostr << "digraph structs {\n";
-
-        for(auto node: nodes_) {
-            //надо будет сделать проверку find в каждом hash
-            ostr << "    node" << node.index_ 
-                 << "[shape = " << graphviz_node_shapes.at(node.shape_)
-                 << ", label = \"{" << node.label_
-                 << "}\", style = " << graphviz_styles.at(node.style_)
-                 << ", fillcolor = \" " << graphviz_colors.at(node.color_) << "\"];\n";
-        }
-        for(auto edge: edges_) {
-            //надо будет сделать проверку find в каждом hash
-            ostr << "    node" << edge.from_ 
-                 << "->node" << edge.to_
-                 << " [style = " << graphviz_styles.at(edge.style_)
-                 << ", fillcolor = \" " << graphviz_colors.at(edge.color_) << "\"];\n";
-        }
-
-        ostr << "}";
-    }
 };
 
 } // end namespace paracl
