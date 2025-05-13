@@ -24,20 +24,20 @@ int main(int argc, const char *argv[]) {
         std::string description = paracl::describe_token(tokens[i]);
 
         paracl::rng r { tokens[i], description };
-        source.message(ss.str(), {
-            //r,
-            {tokens[i], tokens[i+3], "note"},
-            {tokens[i+1], tokens[i+2], "note"},
-            {tokens[i+2], tokens[i+3], "note"},
-            tokens[i]
-        });
+        // source.message(ss.str(), {
+        //     //r,
+        //     {tokens[i], tokens[i+3], "note"},
+        //     {tokens[i+1], tokens[i+2], "note"},
+        //     {tokens[i+2], tokens[i+3], "note"},
+        //     tokens[i]
+        // });
 
         rngs.push_back(r);
 
         // std::cout << "\n";
     }
 
-    source.message("printing all tokens", rngs);
+    // source.message("printing all tokens", rngs);
 
     // using namespace paracl;
 

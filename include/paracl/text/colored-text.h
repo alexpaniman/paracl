@@ -1,13 +1,34 @@
 #pragma once
 
+#include "paracl/structures/index-interval-treap.h"
+
 #include <cstdint>
 #include <variant>
 #include <string>
 #include <format>
 #include <vector>
+#include <cassert>
+
+
+#ifdef _WIN32
+#include <io.h>
+#define isatty _isatty
+#define fileno _fileno
+#else
+#include <unistd.h>
+#endif
+
+#include <print>
 
 
 namespace paracl {
+
+namespace {
+
+constexpr std::string RESET_SEQUENCE = "\033[0m";
+
+} // end anonymous namespace
+
 
 class colored_text {
 public:
@@ -97,6 +118,10 @@ public:
 
         std::string get_ansi_code() const;
 
+        bool operator==(attribute other) const {
+            return kind_ == other.kind_;
+        }
+
     private:
         its_kind kind_;
     };
@@ -108,19 +133,29 @@ public:
 
         std::string get_ansi_code() const;
 
-        formatting operator|(formatting other) {
+        formatting& operator|=(const formatting &other) {
+            if (other.foreground_color)
+                this->foreground_color = other.foreground_color;
+
+            if (other.background_color)
+                this->background_color = other.background_color;
+
+            if (other.attribute)
+                this->attribute = other.attribute;
+
+            return *this;
+        }
+
+        formatting operator|(const formatting &other) const {
             formatting copy = *this;
-
-            if (!foreground_color)
-                copy.foreground_color = other.foreground_color;
-
-            if (!background_color)
-                copy.background_color = other.background_color;
-
-            if (!attribute)
-                copy.attribute = other.attribute;
-
+            copy |= other;
             return copy;
+        }
+
+        bool operator==(const formatting &other) const {
+          return attribute == other.attribute &&
+                 foreground_color == other.foreground_color &&
+                 background_color == other.foreground_color;
         }
     };
 
@@ -180,39 +215,71 @@ public:
         .attribute = attribute::BOLD
     };
 
-
-    colored_text():
-        current_overlay_(std::nullopt) {
-    }
-
-    template <typename... format_args>
-    void append(std::format_string<format_args...> fmt, format_args&&... args) {
-        std::format_to(
-            std::back_inserter(text_),
-            fmt, std::forward<format_args>(args)...
-        );
-    }
-
-    void clear_formatting();
-    void set_formatting(formatting formatting);
-
-    void set_foreground(color foreground);
-    void set_background(color background);
-    void set_attribute(attribute attribute);
-
-    void print() const;
-
-
-private:
-    std::string text_;
-
-    struct formatting_overlay {
-        formatting formatting;
-        size_t begin, end;
+    struct layered_formatting {
+        formatting format;
+        uint32_t layer;
     };
 
-    std::vector<formatting_overlay> overlays_;
-    std::optional<formatting_overlay> current_overlay_;
+    void color(std::span<char> range, formatting format) {
+        index_interval_tree<layered_formatting>::overlay range_overlay {
+            static_cast<uint32_t>(range.begin() - range.begin()),
+            static_cast<uint32_t>(range.end() - range.begin()),
+            { format, current_layer_ ++ }
+        };
+
+        overlays_.insert(range_overlay);
+    }
+
+    void print(uint32_t begin, uint32_t end) {
+        assert(end <= text_.size());
+
+        const bool should_colorize = isatty(fileno(stdout));
+        formatting previous = {}, current = {};
+
+        std::vector<const index_interval_tree<layered_formatting>::overlay*> current_overlays;
+        for (size_t i = begin; i < end; ++ i) {
+            if (should_colorize) {
+                current_overlays.clear();
+                overlays_.query_point(i, current_overlays);
+
+                std::sort(current_overlays.begin(), current_overlays.end(),
+                          [](const auto *lhs, const auto *rhs) {
+                              return lhs->data.layer >= rhs->data.layer;
+                          });
+
+                for (const auto *current_overlay: current_overlays)
+                    current |= current_overlay->data.format;
+            }
+
+            if (previous != current) {
+                std::print("{}", RESET_SEQUENCE);
+                std::print("{}", current.get_ansi_code());
+            }
+
+            std::print("{}", text_[i]);
+            previous = current;
+        }
+    }
+
+    colored_text(std::span<char> text, index_interval_tree<layered_formatting> overlays, uint32_t current_layer): 
+        text_(text),
+        overlays_(overlays),
+        current_layer_(current_layer) {
+    }
+
+    // colored_text substring(uint32_t begin, uint32_t end) {
+    //     auto suboverlays = overlays_.substring(begin, end);
+    //     auto subspan = text_.subspan(begin, end - begin);
+
+
+    // } 
+
+private:
+    std::span<char> text_;
+
+    index_interval_tree<layered_formatting> overlays_;
+    uint32_t current_layer_ = 0;
 };
 
 } // end namespace paracl
+

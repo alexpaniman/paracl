@@ -3,80 +3,9 @@
 #include <cassert>
 #include <print>
 
-#ifdef _WIN32
-#include <io.h>
-#define isatty _isatty
-#define fileno _fileno
-#else
-#include <unistd.h>
-#endif
-
 
 namespace paracl {
 
-namespace {
-
-constexpr std::string RESET_SEQUENCE = "\033[0m";
-
-} // end anonymous namespace
-
-void colored_text::clear_formatting() {
-    if (current_overlay_) {
-        if (current_overlay_->begin != text_.size()) {
-            current_overlay_->end = text_.size();
-            overlays_.push_back(*current_overlay_);
-        }
-
-        current_overlay_ = std::nullopt;
-    }
-}
-
-void colored_text::set_formatting(colored_text::formatting formatting) {
-    clear_formatting();
-    current_overlay_ = {formatting, text_.size(), text_.size()};
-}
-
-void colored_text::set_foreground(colored_text::color foreground) {
-    set_formatting({ .foreground_color = foreground });
-}
-
-void colored_text::set_background(colored_text::color background) {
-    set_formatting({ .background_color = background });
-}
-
-void colored_text::set_attribute(colored_text::attribute attribute) {
-    set_formatting({ .attribute = attribute });
-}
-
-void colored_text::print() const {
-    bool should_colorize = isatty(fileno(stdout));
-    bool should_reset = false;
-
-    size_t overlay_index = 0;
-    for (size_t i = 0; i < text_.size(); ++ i) {
-        if (should_colorize && overlay_index < overlays_.size()) {
-            if (overlays_[overlay_index].begin == i) {
-                std::print("{}",
-                    overlays_[overlay_index].formatting.get_ansi_code()
-                );
-
-                should_reset = true;
-            }
-        }
-
-        std::print("{}", text_[i]);
-
-        if (should_colorize && overlay_index < overlays_.size()) {
-            if (overlays_[overlay_index].end == i + 1) {
-                assert(should_reset && "overlay ended but haven't begun");
-                should_reset = false;
-
-                std::print("{}", RESET_SEQUENCE);
-                overlay_index ++;
-            }
-        }
-    }
-}
 
 
 std::string colored_text::color::get_foreground_ansi_code() const {

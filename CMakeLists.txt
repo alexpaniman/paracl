@@ -110,7 +110,6 @@ add_custom_target(check
   COMMAND ${CMAKE_CTEST_COMMAND}
     --force-new-ctest-process
     --output-on-failure
-    --rerun-failed
     --build-config "$<CONFIGURATION>"
   DEPENDS ${paracl_tests}
 )

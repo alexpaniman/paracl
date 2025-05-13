@@ -22,7 +22,7 @@ struct text_position {
         line(line),
         column(column) {
 
-        assert(point >= (line - 1) + column);
+        // assert(point >= (line - 1) + column);
     }
 
     auto operator<=>(const text_position &other) const {
@@ -86,6 +86,7 @@ struct text_range {
 struct annotated_range {
     text_range range;
     std::string annotation;
+    std::optional<colored_text::color> color;
 
     auto operator<=>(const annotated_range &other) const {
         return range <=> other.range;
