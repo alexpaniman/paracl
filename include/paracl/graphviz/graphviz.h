@@ -2,89 +2,90 @@
 
 #include "paracl/graphviz/attributes.h"
 
-#include <list>
+#include <vector>
 #include <string>
 #include <iostream>
 
 
 namespace paracl {
 
+class node_proxy;
+class edge_proxy;
+
 class graphviz final {
-    public:
-    template <auto create_node, typename node_type>
-    void insert_node(node_type type, size_t index, const std::string& label) {
-        static_assert(std::is_same_v<decltype(create_node(type, index, label)), node>);
-        nodes_.push_back(create_node(type, index, label));
-    }
+public:
+    node_proxy insert_node(graphviz_formatting format, const std::string& label);
+    edge_proxy insert_edge(graphviz_formatting format, size_t from, size_t to, const std::string& label);
 
-    template <auto create_edge, typename edge_type>
-    void insert_edge(edge_type type, size_t from, size_t to, const std::string& label) {
-        static_assert(std::is_same_v<decltype(create_edge(type, from, to, label)), edge>);
-        edges_.push_back(create_edge(type, from, to, label));  
-    }
-
-    void print(std::ostream &ostr = std::cout) {
-        ostr << "digraph structs {\n";
-
-        for(auto node: nodes_) {
-            //надо будет сделать проверку find в каждом hash
-            ostr << "    node" << node.index_ 
-                 << "[shape = " << graphviz_node_shapes.at(node.shape_)
-                 << ", label = \"{" << node.label_
-                 << "}\", style = " << graphviz_styles.at(node.style_)
-                 << ", fillcolor = \"" << graphviz_colors.at(node.color_) << "\"];\n";
-        }
-        for(auto edge: edges_) {
-            //надо будет сделать проверку find в каждом hash
-            ostr << "    node" << edge.from_ 
-                 << "->node" << edge.to_
-                 << "[style = " << graphviz_styles.at(edge.style_)
-                 << ", fillcolor = \"" << graphviz_colors.at(edge.color_) << "\"];\n";
-        }
-
-        ostr << "}";
-    }
+    void print(std::ostream &ostr = std::cout);
 
 public:
     class node {
     public:
-        graphviz_style style_;
-        graphviz_color color_;
-        graphviz_node_shape shape_;
+        graphviz_formatting formatting_;
 
-        size_t index_;
         std::string label_;
 
-        explicit node(size_t index, const std::string& label) noexcept:
-            style_(graphviz_style::STYLE_FILLED),
-            color_(graphviz_color::GRAPHVIZ_WHITE),
-            shape_(graphviz_node_shape::SHAPE_RECORD),
-            index_(index), label_(label) {}
-        explicit node(graphviz_style style, graphviz_color color, graphviz_node_shape shape,
-                      size_t index, const std::string& label) noexcept: 
-            style_(style), color_(color), shape_(shape), index_(index), label_(label) {}
+        explicit node(const std::string& label) noexcept:
+            formatting_(), label_(label) {}
+        explicit node(graphviz_formatting formatting,
+                      const std::string& label) noexcept: 
+            formatting_(formatting), label_(label) {}
     };
 
     class edge {
     public:
-        graphviz_style style_;
-        graphviz_color color_;
+        graphviz_formatting formatting_;
 
         size_t from_;
         size_t to_;
         std::string label_;
 
         explicit edge(size_t from, size_t to, const std::string& label) noexcept:
-            style_(graphviz_style::STYLE_FILLED), color_(graphviz_color::GRAPHVIZ_BLACK), 
-            from_(from), to_(to), label_(label) {}
-        explicit edge(graphviz_style style, graphviz_color color, 
+            formatting_(), from_(from), to_(to), label_(label) {}
+        explicit edge(graphviz_formatting formatting, 
                       size_t from, size_t to, const std::string& label) noexcept:
-            style_(style), color_(color), from_(from), to_(to), label_(label) {}
+            formatting_(formatting), from_(from), to_(to), label_(label) {}
     };
 
 private:
-    std::list<node> nodes_;
-    std::list<edge> edges_;
+    std::vector<node> nodes_;
+    std::vector<edge> edges_;
+
+public:
+    std::vector<node>& get_nodes();
+    std::vector<edge>& get_edges();
+};
+
+class edge_proxy {
+public:
+    edge_proxy(graphviz* graph, size_t index): graph_(graph), index_(index) {}
+
+    graphviz::edge& get_edge() {
+        return graph_->get_edges()[index_];
+    }
+
+private:
+    graphviz* graph_;
+    size_t index_;
+};
+
+
+class node_proxy {
+public:
+    node_proxy(graphviz* graph, size_t index): graph_(graph), index_(index) {}
+
+    void connect(graphviz_formatting format, node_proxy other) {
+        graph_->insert_edge(format, index_, other.index_, "");
+    }
+
+    graphviz::node& get_node() {
+        return graph_->get_nodes()[index_];
+    }
+
+private:
+    graphviz* graph_;
+    size_t index_;
 };
 
 } // end namespace paracl

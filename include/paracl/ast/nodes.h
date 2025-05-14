@@ -2,7 +2,7 @@
 
 #include "paracl/ast/context.h"
 #include "paracl/ast/marked_pointers.h"
-#include "paracl/graphviz/ast_utils.h"
+#include "paracl/ast/graphviz_utils.h"
 
 #include <iostream>
 #include <memory>
@@ -17,7 +17,7 @@ namespace paracl {
 class node {
 public:
     virtual int64_t execute(context &ctx) = 0;
-    virtual void dump_gv(graphviz &graph) const = 0;
+    virtual void dump_gv(graphviz &graph, node_proxy& parent) const = 0;
     virtual void dump(std::ostream &ostr) const = 0;
     virtual ~node() = default;
 };
@@ -35,9 +35,9 @@ public:
         ostr << value_;
     }
 
-    void dump_gv(graphviz &graph) const override {
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::number, node_id, std::to_string(value_));
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::number, std::to_string(value_));
+        parent.connect(graphviz_formatter::default_edge, node);
     }
 
 private:
@@ -58,9 +58,9 @@ public:
         ostr << name_;
     }
 
-    void dump_gv(graphviz &graph) const override {
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::id, node_id, name_);
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::id, name_);
+        parent.connect(graphviz_formatter::default_edge, node);
     }
 
 private:
@@ -97,14 +97,12 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(graphviz &graph) const override {
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::function, node_id, name_);
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::function, name_);
+        parent.connect(graphviz_formatter::default_edge, node);
 
         for (const auto& i: args_) {
-            size_t child_id = reinterpret_cast<size_t>(i.get());
-            graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-            i->dump_gv(graph);
+            i->dump_gv(graph, node);
         }
     }
 
@@ -141,17 +139,12 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(graphviz &graph) const override {
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::assignment, node_id, get_name());
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::assignment, get_name());
+        parent.connect(graphviz_formatter::default_edge, node);
 
-        size_t child_id = reinterpret_cast<size_t>(left_.get());
-        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-        left_->dump_gv(graph);
-
-        child_id = reinterpret_cast<size_t>(right_.get());
-        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-        right_->dump_gv(graph);
+        left_->dump_gv(graph, node);
+        right_->dump_gv(graph, node);
     }
 
 protected:
@@ -244,13 +237,11 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(graphviz &graph) const override {
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::negation, node_id, get_name());
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::negation, get_name());
+        parent.connect(graphviz_formatter::default_edge, node);
 
-        size_t child_id = reinterpret_cast<size_t>(child_.get());
-        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-        child_->dump_gv(graph);
+        child_->dump_gv(graph, node);
     }
 
 private:
@@ -289,17 +280,12 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(graphviz &graph) const override {
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::arithmetic_and_comparative, node_id, get_name());
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::arithmetic_and_comparative, get_name());
+        parent.connect(graphviz_formatter::default_edge, node);
 
-        size_t child_id = reinterpret_cast<size_t>(left_.get());
-        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-        left_->dump_gv(graph);
-
-        child_id = reinterpret_cast<size_t>(right_.get());
-        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-        right_->dump_gv(graph);
+        left_->dump_gv(graph, node);
+        right_->dump_gv(graph, node);
     }
 
 protected:
@@ -426,18 +412,14 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(graphviz &graph) const override {
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
         std::string label = is_loop ? "while" : "if";
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::conditional, node_id, label);
+        auto node = graph.insert_node(graphviz_formatter::conditional, label);
+        parent.connect(graphviz_formatter::default_edge, node);
 
-        size_t child_id = reinterpret_cast<size_t>(condition_.get());
-        graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-        condition_->dump_gv(graph);
+        condition_->dump_gv(graph, node);
         for (const auto& i: scope_) {
-            child_id = reinterpret_cast<size_t>(i.get());
-            graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-            i->dump_gv(graph);
+            i->dump_gv(graph, node);
         }
     }
 
@@ -463,9 +445,9 @@ public:
         ostr << "scan";
     }
 
-    void dump_gv(graphviz &graph) const override {
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::scan, node_id, "scan");
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::scan, "scan");
+        parent.connect(graphviz_formatter::default_edge, node);
     }
 };
 
