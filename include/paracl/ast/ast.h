@@ -33,12 +33,9 @@ public:
     void dump_gv(std::ostream &ostr = std::cout) const {
         graphviz graph{};
 
-        size_t node_id = reinterpret_cast<size_t>(this);
-        graph.insert_node<create_ast_node, ast_node_type>(ast_node_type::conditional, node_id, "program");
+        auto node = graph.insert_node(graphviz_formatter::conditional, "program");
         for (const auto& i: scope_) {
-            size_t child_id = reinterpret_cast<size_t>(i.get());
-            graph.insert_edge<create_ast_edge, ast_edge_type>(ast_edge_type::default_edge, node_id, child_id, "");
-            i->dump_gv(graph);
+            i->dump_gv(graph, node);
         }
 
         graph.print(ostr);
