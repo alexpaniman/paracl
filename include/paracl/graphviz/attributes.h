@@ -1,11 +1,12 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 
 
 namespace paracl {
 
-enum graphviz_color {
+enum graphviz_color: uint8_t {
     RED,
     BLUE,
     GREEN,
@@ -28,7 +29,7 @@ enum graphviz_color {
 };
 extern const char* color_codes[COLOR_COUNT];
 
-enum graphviz_style {
+enum graphviz_style: uint8_t {
     FILLED,
     ROUNDED,
     DASHED,
@@ -41,7 +42,7 @@ enum graphviz_style {
 };
 extern const char* style_codes[STYLE_COUNT];
 
-enum graphviz_shape {
+enum graphviz_shape: uint8_t {
     RECORD,
     BOX,
     POLYGON,
@@ -76,14 +77,14 @@ public:
     graphviz_formatting(graphviz_color color = graphviz_color::BLACK,
                         graphviz_style style = graphviz_style::FILLED,
                         graphviz_shape shape = graphviz_shape::RECORD):
-    color_(color_codes[color]),
-    style_(style_codes[style]),
-    shape_(shape_codes[shape]) {}
+    color_(color),
+    style_(style),
+    shape_(shape) {}
 
 public:
-    std::string color_;
-    std::string style_;
-    std::string shape_;
+    uint8_t color_;
+    uint8_t style_;
+    uint8_t shape_;
 };
 
 } // end namespace paracl
