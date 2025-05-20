@@ -4,14 +4,13 @@
 namespace paracl {
 
 node_proxy graphviz::insert_node(graphviz_formatting format, const std::string& label) {
-    nodes_.push_back(node(format, label));
-    return node_proxy(this, nodes_.size() - 1);
+    nodes_.emplace_back(label, format);
+    return node_proxy(*this, nodes_.size() - 1);
 }
 
-edge_proxy graphviz::insert_edge(graphviz_formatting format, size_t from, size_t to, 
+void graphviz::insert_edge(graphviz_formatting format, size_t from, size_t to, 
                                  const std::string& label) {
-    edges_.push_back(edge(format, from, to, label));
-    return edge_proxy(this, edges_.size() - 1);
+    edges_.emplace_back(from, to, label, format);
 }
 
 std::vector<graphviz::node>& graphviz::get_nodes() {
@@ -28,16 +27,16 @@ void graphviz::print(std::ostream &ostr) {
     for(size_t i = 0; i < nodes_.size(); ++i) {
         auto node = nodes_[i];
         ostr << "    node" << i 
-             << "[shape = " << node.formatting_.shape_
-             << ", fillcolor = \"" << node.formatting_.color_
-             << "\", style = " << node.formatting_.style_
+             << "[shape = " << shape_codes[node.formatting_.shape_]
+             << ", fillcolor = \"" << color_codes[node.formatting_.color_]
+             << "\", style = " << style_codes[node.formatting_.style_]
              << ", label = \"{" << node.label_ << "}\"];\n";
     }
     for(auto edge: edges_) {
         ostr << "    node" << edge.from_ 
              << "->node" << edge.to_
-             << "[style = " << edge.formatting_.style_
-             << ", fillcolor = \"" << edge.formatting_.color_ << "\"];\n";
+             << "[style = " << style_codes[edge.formatting_.style_]
+             << ", fillcolor = \"" << color_codes[edge.formatting_.color_ ]<< "\"];\n";
     }
 
     ostr << "}";

@@ -59,7 +59,7 @@ public:
     }
 
     void dump_gv(graphviz &graph, node_proxy& parent) const override {
-        auto node = graph.insert_node(graphviz_formatter::id, name_);
+        auto node = graph.insert_node(graphviz_formatter::id, std::move(name_));
         parent.connect(graphviz_formatter::default_edge, node);
     }
 
@@ -98,7 +98,7 @@ public:
     }
 
     void dump_gv(graphviz &graph, node_proxy& parent) const override {
-        auto node = graph.insert_node(graphviz_formatter::function, name_);
+        auto node = graph.insert_node(graphviz_formatter::function, std::move(name_));
         parent.connect(graphviz_formatter::default_edge, node);
 
         for (const auto& i: args_) {
@@ -140,7 +140,7 @@ public:
     }
 
     void dump_gv(graphviz &graph, node_proxy& parent) const override {
-        auto node = graph.insert_node(graphviz_formatter::assignment, get_name());
+        auto node = graph.insert_node(graphviz_formatter::assignment, std::move(get_name()));
         parent.connect(graphviz_formatter::default_edge, node);
 
         left_->dump_gv(graph, node);
@@ -238,7 +238,7 @@ public:
     }
 
     void dump_gv(graphviz &graph, node_proxy& parent) const override {
-        auto node = graph.insert_node(graphviz_formatter::negation, get_name());
+        auto node = graph.insert_node(graphviz_formatter::negation, std::move(get_name()));
         parent.connect(graphviz_formatter::default_edge, node);
 
         child_->dump_gv(graph, node);
@@ -281,7 +281,7 @@ public:
     }
 
     void dump_gv(graphviz &graph, node_proxy& parent) const override {
-        auto node = graph.insert_node(graphviz_formatter::arithmetic_and_comparative, get_name());
+        auto node = graph.insert_node(graphviz_formatter::arithmetic_and_comparative, std::move(get_name()));
         parent.connect(graphviz_formatter::default_edge, node);
 
         left_->dump_gv(graph, node);
