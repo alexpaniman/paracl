@@ -9,7 +9,7 @@ struct token {
     token_type type;
     union {
         std::span<char> id;
-        uint64_t number;
+        int64_t number;
     };
 };
 

@@ -29,7 +29,7 @@ std::vector<token> tokenize(std::span<char> input) {
 
         if (type == token_type::NUMBER) {
             std::string stringified_number(tok->text.data(), tok->text.size());
-            uint64_t number = std::stoull(stringified_number);
+            int64_t number = std::stoull(stringified_number);
 
             tokens.push_back({type, {.number = number}});
             continue;
