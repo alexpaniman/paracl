@@ -2,10 +2,12 @@
 
 #include "paracl/ast/context.h"
 #include "paracl/ast/marked_pointers.h"
+#include "paracl/ast/graphviz_utils.h"
 
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <string>
 #include <functional>
 #include <iomanip>
 
@@ -15,7 +17,7 @@ namespace paracl {
 class node {
 public:
     virtual int64_t execute(context &ctx) = 0;
-    virtual void dump_gv(std::ostream &ostr) const = 0;
+    virtual void dump_gv(graphviz &graph, node_proxy& parent) const = 0;
     virtual void dump(std::ostream &ostr) const = 0;
     virtual ~node() = default;
 };
@@ -33,9 +35,9 @@ public:
         ostr << value_;
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{" << value_
-             << "}\", style = \"filled\", fillcolor = \"#EAA9D6\"];\n";
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::number, std::to_string(value_));
+        parent.connect(graphviz_formatter::default_edge, node);
     }
 
 private:
@@ -56,9 +58,9 @@ public:
         ostr << name_;
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{" << name_
-             << "}\", style = \"filled\", fillcolor = \"#EAA9D6\"];\n";
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::id, std::move(name_));
+        parent.connect(graphviz_formatter::default_edge, node);
     }
 
 private:
@@ -95,13 +97,12 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape=Mrecord, label=\"{" << name_
-             << "}\", style=filled, fillcolor=\"#CC9CFF\"]\n";
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::function, std::move(name_));
+        parent.connect(graphviz_formatter::default_edge, node);
+
         for (const auto& i: args_) {
-            ostr << "    node" << this << "->node" << i.get()
-                 << " [color = \"#293133\"]\n";
-            i->dump_gv(ostr);
+            i->dump_gv(graph, node);
         }
     }
 
@@ -138,15 +139,12 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{" << get_name() << "}\", "
-             << "style = \"filled\", fillcolor = \"#9ACEEB\"];\n";
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::assignment, std::move(get_name()));
+        parent.connect(graphviz_formatter::default_edge, node);
 
-        ostr << "    node" << this << "->node" << left_.get() << " [color = \"#293133\"];\n";
-        left_->dump_gv(ostr);
-
-        ostr << "    node" << this << "->node" << right_.get() << " [color = \"#293133\"];\n";
-        right_->dump_gv(ostr);
+        left_->dump_gv(graph, node);
+        right_->dump_gv(graph, node);
     }
 
 protected:
@@ -239,13 +237,11 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this
-             << "[shape=Mrecord, label=\"{" << get_name()
-             << "}\", style=filled, fillcolor=\"#9ACEEB\"];\n";
-        ostr << "    node" << this
-             << "->node" << child_.get() << " [color=\"#293133\"];\n";
-        child_->dump_gv(ostr);
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::negation, std::move(get_name()));
+        parent.connect(graphviz_formatter::default_edge, node);
+
+        child_->dump_gv(graph, node);
     }
 
 private:
@@ -284,17 +280,12 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this
-             << "[shape=Mrecord, label=";
-        ostr << "\"" << get_name() << "\"";
-        ostr << ", style=filled, fillcolor=\"#9ACEEB\"];\n";
-        ostr << "    node" << this
-             << "->node" << left_.get() << " [color=\"#293133\"];\n";
-        left_->dump_gv(ostr);
-        ostr << "    node" << this
-             << "->node" << right_.get() << " [color=\"#293133\"];\n";
-        right_->dump_gv(ostr);
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::arithmetic_and_comparative, std::move(get_name()));
+        parent.connect(graphviz_formatter::default_edge, node);
+
+        left_->dump_gv(graph, node);
+        right_->dump_gv(graph, node);
     }
 
 protected:
@@ -421,17 +412,14 @@ public:
         ostr << ")";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
         std::string label = is_loop ? "while" : "if";
-        ostr << "    node" << this << "[shape=Mrecord, label=\"{" << label
-             << "}\", style=filled, fillcolor=\"#F8EDA2\"]\n";
-        ostr << "    node" << this << "->node" << condition_.get()
-             << " [color = \"#FF2B2B\"]\n";
-        condition_->dump_gv(ostr);
+        auto node = graph.insert_node(graphviz_formatter::conditional, label);
+        parent.connect(graphviz_formatter::default_edge, node);
+
+        condition_->dump_gv(graph, node);
         for (const auto& i: scope_) {
-            ostr << "    node" << this << "->node" << i.get()
-                 << " [color = \"#293133\"]\n";
-            i->dump_gv(ostr);
+            i->dump_gv(graph, node);
         }
     }
 
@@ -457,9 +445,9 @@ public:
         ostr << "scan";
     }
 
-    void dump_gv(std::ostream &ostr) const override {
-        ostr << "    node" << this << "[shape = Mrecord, label = \"{scan}\", "
-             << "style = \"filled\", fillcolor = \"#EAA9D6\"];\n";
+    void dump_gv(graphviz &graph, node_proxy& parent) const override {
+        auto node = graph.insert_node(graphviz_formatter::scan, "scan");
+        parent.connect(graphviz_formatter::default_edge, node);
     }
 };
 
