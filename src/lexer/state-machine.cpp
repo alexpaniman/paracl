@@ -11,9 +11,12 @@ namespace paracl {
 inline constexpr size_t CHAR_COUNT = 1 << (sizeof(char) * 8);
 
 uint8_t S30[CHAR_COUNT] = {
+    ['A'...'Z'] = 1, // id
+
     ['a'...'h'] = 1, // id
     ['j'...'v'] = 1, // id
     ['x'...'z'] = 1, // id
+
     ['_'] = 1, // id
 
     ['i'] = 2, // id or if
@@ -57,6 +60,7 @@ uint8_t S31[CHAR_COUNT] = {
 uint8_t S1[CHAR_COUNT] = {
     // terminal id
 
+    ['A'...'Z'] = 1, // id
     ['a'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
@@ -65,8 +69,11 @@ uint8_t S1[CHAR_COUNT] = {
 uint8_t S2[CHAR_COUNT] = {
     // terminal id
 
+    ['A'...'Z'] = 1, // id
+
     ['a'...'e'] = 1, // id
     ['g'...'z'] = 1, // id
+
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
@@ -76,6 +83,7 @@ uint8_t S2[CHAR_COUNT] = {
 uint8_t S3[CHAR_COUNT] = {
     // terminal if
 
+    ['A'...'Z'] = 1, // id
     ['a'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
@@ -84,8 +92,11 @@ uint8_t S3[CHAR_COUNT] = {
 uint8_t S4[CHAR_COUNT] = {
     // terminal id
 
+    ['A'...'Z'] = 1, // id
+
     ['a'...'g'] = 1, // id
     ['i'...'z'] = 1, // id
+
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
@@ -95,8 +106,11 @@ uint8_t S4[CHAR_COUNT] = {
 uint8_t S5[CHAR_COUNT] = {
     // terminal id
 
+    ['A'...'Z'] = 1, // id
+
     ['a'...'h'] = 1, // id
     ['j'...'z'] = 1, // id
+
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
@@ -106,8 +120,11 @@ uint8_t S5[CHAR_COUNT] = {
 uint8_t S6[CHAR_COUNT] = {
     // terminal id
 
+    ['A'...'Z'] = 1, // id
+
     ['a'...'k'] = 1, // id
     ['m'...'z'] = 1, // id
+
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
@@ -117,8 +134,11 @@ uint8_t S6[CHAR_COUNT] = {
 uint8_t S7[CHAR_COUNT] = {
     // terminal id
 
+    ['A'...'Z'] = 1, // id
+
     ['a'...'d'] = 1, // id
     ['f'...'z'] = 1, // id
+
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
@@ -128,6 +148,7 @@ uint8_t S7[CHAR_COUNT] = {
 uint8_t S8[CHAR_COUNT] = {
     // terminal while
 
+    ['A'...'Z'] = 1, // id
     ['a'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id

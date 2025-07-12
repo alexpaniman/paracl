@@ -195,5 +195,72 @@ TEST_CASE("tokenize basic input") {
         IS_SAME(tokens[12], "ID{whilevani}");
         IS_SAME(tokens[13], "ID{whilesani}");
     }
+
+    SECTION("identifiers can have uppercase letters") {
+        std::string input = R"(
+            while
+            WHILE
+            whilE
+            whIlE
+            wHIlE
+            wHile
+            While
+            WHile
+            WHIle
+            WHILe
+            WHILE
+            WhiLe
+            wHIlE
+            if
+            If
+            IF
+            iF
+            IF123
+            IFIF
+            IFWHILE
+            WHILEIF
+            WHILEWHILE
+            IFANI
+            IFSANI
+            WHILE2410
+            WHILE228
+            WHILE1337
+            WHILEANI
+            WHILESANI
+        )";
+
+        auto tokens = tokenize(input);
+        REQUIRE(tokens.size() == 29);
+
+        IS_SAME(tokens[0], "WHILE");
+        IS_SAME(tokens[1], "ID{WHILE}");
+        IS_SAME(tokens[2], "ID{whilE}");
+        IS_SAME(tokens[3], "ID{whIlE}");
+        IS_SAME(tokens[4], "ID{wHIlE}");
+        IS_SAME(tokens[5], "ID{wHile}");
+        IS_SAME(tokens[6], "ID{While}");
+        IS_SAME(tokens[7], "ID{WHile}");
+        IS_SAME(tokens[8], "ID{WHIle}");
+        IS_SAME(tokens[9], "ID{WHILe}");
+        IS_SAME(tokens[10], "ID{WHILE}");
+        IS_SAME(tokens[11], "ID{WhiLe}");
+        IS_SAME(tokens[12], "ID{wHIlE}");
+        IS_SAME(tokens[13], "IF");
+        IS_SAME(tokens[14], "ID{If}");
+        IS_SAME(tokens[15], "ID{IF}");
+        IS_SAME(tokens[16], "ID{iF}");
+        IS_SAME(tokens[17], "ID{IF123}");
+        IS_SAME(tokens[18], "ID{IFIF}");
+        IS_SAME(tokens[19], "ID{IFWHILE}");
+        IS_SAME(tokens[20], "ID{WHILEIF}");
+        IS_SAME(tokens[21], "ID{WHILEWHILE}");
+        IS_SAME(tokens[22], "ID{IFANI}");
+        IS_SAME(tokens[23], "ID{IFSANI}");
+        IS_SAME(tokens[24], "ID{WHILE2410}");
+        IS_SAME(tokens[25], "ID{WHILE228}");
+        IS_SAME(tokens[26], "ID{WHILE1337}");
+        IS_SAME(tokens[27], "ID{WHILEANI}");
+        IS_SAME(tokens[28], "ID{WHILESANI}");
+    }
 }
 
