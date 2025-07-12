@@ -15,7 +15,6 @@ int main(int argc, const char *argv[]) {
     std::string text = paracl::read_file(filename);
 
     std::vector<paracl::token> tokens = paracl::tokenize(text);
-
     paracl::ast ast(tokens);
-    ast.dump();
+    ast.to_program();
 }

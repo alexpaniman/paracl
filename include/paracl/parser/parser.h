@@ -26,7 +26,7 @@ private:
 
     int get_operator_precedence(token_type type) const;
 
-    std::unique_ptr<node> parse_id_or_num(bool create_variable = false);
+    std::unique_ptr<node> parse_id_or_num(/*bool create_variable = false*/);
     std::unique_ptr<node> parse_expression(int min_precedence);
     std::unique_ptr<node> parse_function();
     std::unique_ptr<node> parse_comparison_operation();
@@ -35,8 +35,8 @@ private:
     std::vector<std::unique_ptr<node>> parse_scope();
 
     template <typename node_type>
-    std::unique_ptr<node> parse_binary_operation(bool create_var = false) {
-        std::unique_ptr<node> left = parse_id_or_num(create_var);
+    std::unique_ptr<node> parse_binary_operation(/*bool create_var = false*/) {
+        std::unique_ptr<node> left = parse_id_or_num(/*create_var*/);
         eat_token();
         std::unique_ptr<node> right = parse_expression(0);
         return std::make_unique<node_type>(std::move(left), std::move(right));

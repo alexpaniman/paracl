@@ -14,9 +14,35 @@
 
 namespace paracl {
 
+enum class node_type {
+    NUMBER,
+    ID,
+    FUNCTION,
+    ASSIGN,
+    PLUSASSIGN,
+    MINUSASSIGN,
+    MULTIPLYASSIGN,
+    DIVIDEASSIGN,
+    NEGATE,
+    PLUS,
+    MINUS,
+    MULTIPLY,
+    DIVIDE,
+    EQUAL,
+    LESS,
+    BIGGER,
+    LESSEQUAL,
+    BIGGEREQUAL,
+    IF,
+    WHILE,
+    SCAN,
+};
+
 class node {
 public:
+    virtual node_type get_type() const noexcept = 0;
     virtual int64_t execute(context &ctx) = 0;
+    virtual void to_program(std::ostream &ostr) const = 0;
     virtual void dump_gv(graphviz &graph, node_proxy& parent) const = 0;
     virtual void dump(std::ostream &ostr) const = 0;
     virtual ~node() = default;
@@ -27,8 +53,16 @@ public:
     explicit number_node(int64_t value):
         value_(value) {}
 
+    node_type get_type() const noexcept override {
+        return node_type::NUMBER;
+    }
+
     int64_t execute([[maybe_unused]] context &ctx) override {
         return create_value(value_);
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        ostr << value_;
     }
 
     void dump(std::ostream &ostr) const override {
@@ -50,8 +84,16 @@ public:
     explicit id_node(std::string name):
         name_(std::move(name)) {}
 
+    node_type get_type() const noexcept override {
+        return node_type::ID;
+    }
+
     int64_t execute(context &ctx) override {
         return create_pointer(ctx.get_variable(name_));
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        ostr << name_;
     }
 
     void dump(std::ostream &ostr) const override {
@@ -72,6 +114,10 @@ public:
     explicit function_node(std::string name, std::vector<std::unique_ptr<node>> args):
         name_(std::move(name)), args_(std::move(args)) {}
 
+    node_type get_type() const noexcept override {
+        return node_type::FUNCTION;
+    }
+
     int64_t execute(context &ctx) override {
         if (name_ == "print") {
             bool first = true;
@@ -84,8 +130,19 @@ public:
             }
             std::cout << std::endl;
             return 1;
-        }        
+        }
         return 0; //остальные функции пока не реализованы
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        ostr << name_ << "(";
+        for (auto it = args_.begin(); it != args_.end(); ++it) {
+            (*it)->to_program(ostr);
+            if (std::next(it) != args_.end()) {
+                ostr << ", ";
+            }
+        }
+        ostr << ");";
     }
 
     void dump(std::ostream &ostr) const override {
@@ -118,17 +175,28 @@ public:
         left_(std::move(left)), right_(std::move(right)) {}
     virtual ~assign_operation() = default;
 
-    const char* get_name() const {
-        return static_cast<const impl_type*>(this)->get_name();
-    }
-
     int64_t assigned_value(context &ctx) const {
         return static_cast<const impl_type*>(this)->assigned_value(ctx);
+    }
+
+    node_type get_type() const noexcept override {
+        return static_cast<const impl_type*>(this)->get_type();
     }
 
     int64_t execute(context &ctx) override {
         *get_pointer(left_->execute(ctx)) = assigned_value(ctx);
         return 1;
+    }
+
+    const char* get_name() const {
+        return static_cast<const impl_type*>(this)->get_name();
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        left_->to_program(ostr);
+        ostr << " " << get_name() << " ";
+        right_->to_program(ostr);
+        ostr << ";";
     }
 
     void dump(std::ostream &ostr) const override {
@@ -155,11 +223,15 @@ protected:
 class assign_node final: public assign_operation<assign_node> {
 public:
     using assign_operation::assign_operation;
-    
+
+    node_type get_type() const noexcept override {
+        return node_type::ASSIGN;
+    }
+
     const char* get_name() const {
         return "=";
     }
-    
+
     int64_t assigned_value(context &ctx) const {
         return get_value(right_->execute(ctx));
     }
@@ -168,6 +240,10 @@ public:
 class plus_assign_node final: public assign_operation<plus_assign_node> {
 public:
     using assign_operation::assign_operation;
+
+    node_type get_type() const noexcept override {
+        return node_type::PLUSASSIGN;
+    }
 
     const char* get_name() const {
         return "+=";
@@ -181,11 +257,15 @@ public:
 class minus_assign_node final: public assign_operation<minus_assign_node> {
 public:
     using assign_operation::assign_operation;
-    
+
+    node_type get_type() const noexcept override {
+        return node_type::MINUSASSIGN;
+    }
+
     const char* get_name() const {
         return "-=";
     }
-    
+
     int64_t assigned_value(context &ctx) const {
         return std::minus<int64_t>()(get_value(left_->execute(ctx)), get_value(right_->execute(ctx)));
     }
@@ -194,11 +274,15 @@ public:
 class multiply_assign_node final: public assign_operation<multiply_assign_node> {
 public:
     using assign_operation::assign_operation;
-        
+
+    node_type get_type() const noexcept override {
+        return node_type::MULTIPLYASSIGN;
+    }
+
     const char* get_name() const {
         return "*=";
     }
-        
+
     int64_t assigned_value(context &ctx) const {
         return std::multiplies<int64_t>()(get_value(left_->execute(ctx)), get_value(right_->execute(ctx)));
     }
@@ -207,11 +291,15 @@ public:
 class divide_assign_node final: public assign_operation<divide_assign_node> {
 public:
     using assign_operation::assign_operation;
-            
+
+    node_type get_type() const noexcept override {
+        return node_type::DIVIDEASSIGN;
+    }
+
     const char* get_name() const {
         return "/=";
     }
-            
+
     int64_t assigned_value(context &ctx) const {
         return std::divides<int64_t>()(get_value(left_->execute(ctx)), get_value(right_->execute(ctx)));
     }
@@ -223,12 +311,31 @@ public:
     explicit negate_node(std::unique_ptr<node> left):
         child_(std::move(left)) {}
 
+    node_type get_type() const noexcept override {
+        return node_type::NEGATE;
+    }
+
     int64_t execute(context &ctx) override {
         return create_value(std::negate<int64_t>{}(get_value(child_->execute(ctx))));
     }
 
     std::string get_name() const {
         return "-";
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        ostr << get_name();
+
+        const node& ref = *child_;
+        const std::type_info& ti = typeid(ref);
+        if (ti == typeid(id_node) || ti == typeid(number_node)) {
+            child_->to_program(ostr);
+        }
+        else {
+            ostr << "(";
+            child_->to_program(ostr);
+            ostr << ")";
+        }
     }
 
     void dump(std::ostream &ostr) const override {
@@ -248,19 +355,19 @@ private:
     std::unique_ptr<node> child_;
 };
 
-
 class divide_node;
+//class scan_node;
 
 template <typename impl_type, typename op>
 class arithmetic_and_comparative_operator: public node {
 public:
-    explicit arithmetic_and_comparative_operator(std::unique_ptr<node> left, 
+    explicit arithmetic_and_comparative_operator(std::unique_ptr<node> left,
                                                  std::unique_ptr<node> right):
         left_(std::move(left)), right_(std::move(right)) {}
     virtual ~arithmetic_and_comparative_operator() = default;
 
-    const char* get_name() const {
-        return static_cast<const impl_type*>(this)->get_name();
+    node_type get_type() const noexcept override {
+        return static_cast<const impl_type*>(this)->get_type();
     }
 
     int64_t execute(context &ctx) override {
@@ -272,6 +379,66 @@ public:
                                  get_value(right_->execute(ctx))));
     }
 
+    const char* get_name(bool for_graphviz = false) const {
+        return static_cast<const impl_type*>(this)->get_name(for_graphviz);
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        if(get_type() == node_type::PLUS || get_type() == node_type::MINUS) {
+            left_->to_program(ostr);
+            ostr << " " << get_name() << " ";
+            if(right_->get_type() == node_type::PLUS || right_->get_type() == node_type::MINUS) {
+                ostr << "(";
+                right_->to_program(ostr);
+                ostr << ")";
+            }
+            else {
+                right_->to_program(ostr);
+            }
+        }
+        else if(get_type() == node_type::MULTIPLY || get_type() == node_type::DIVIDE) {
+            if(left_->get_type() == node_type::PLUS || left_->get_type() == node_type::MINUS) {
+                ostr << "(";
+                left_->to_program(ostr);
+                ostr << ")";
+            }
+            else {
+                left_->to_program(ostr);
+            }
+            ostr << " " << get_name() << " ";
+            if(right_->get_type() == node_type::PLUS || right_->get_type() == node_type::MINUS ||
+               right_->get_type() == node_type::MULTIPLY || right_->get_type() == node_type::DIVIDE) {
+                ostr << "(";
+                right_->to_program(ostr);
+                ostr << ")";
+            }
+            else {
+                right_->to_program(ostr);
+            }
+        }
+        else {
+            if(left_->get_type() == node_type::ID || left_->get_type() == node_type::NUMBER ||
+               left_->get_type() == node_type::SCAN) {
+                left_->to_program(ostr);
+            }
+            else {
+                ostr << "(";
+                left_->to_program(ostr);
+                ostr << ")";
+            }
+            ostr << " " << get_name() << " ";
+            if(right_->get_type() == node_type::ID || right_->get_type() == node_type::NUMBER ||
+               right_->get_type() == node_type::SCAN) {
+                right_->to_program(ostr);
+            }
+            else {
+                ostr << "(";
+                right_->to_program(ostr);
+                ostr << ")";
+            }
+        }
+    }
+
     void dump(std::ostream &ostr) const override {
         ostr << get_name() << " (";
         left_->dump(ostr);
@@ -281,7 +448,8 @@ public:
     }
 
     void dump_gv(graphviz &graph, node_proxy& parent) const override {
-        auto node = graph.insert_node(graphviz_formatter::arithmetic_and_comparative, std::move(get_name()));
+        auto node = graph.insert_node(graphviz_formatter::arithmetic_and_comparative,
+                                      std::move(get_name(true)));
         parent.connect(graphviz_formatter::default_edge, node);
 
         left_->dump_gv(graph, node);
@@ -297,7 +465,11 @@ class plus_node final: public arithmetic_and_comparative_operator<plus_node, std
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
 
-    const char* get_name() const {
+    node_type get_type() const noexcept override {
+        return node_type::PLUS;
+    }
+
+    const char* get_name([[maybe_unused]] bool for_graphviz) const {
         return "+";
     }
 };
@@ -305,8 +477,12 @@ public:
 class minus_node final: public arithmetic_and_comparative_operator<minus_node, std::minus<int64_t>> {
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
-        
-    const char* get_name() const {
+
+    node_type get_type() const noexcept override {
+        return node_type::MINUS;
+    }
+
+    const char* get_name([[maybe_unused]] bool for_graphviz) const {
         return "-";
     }
 };
@@ -315,7 +491,11 @@ class multiply_node final: public arithmetic_and_comparative_operator<multiply_n
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
 
-    const char* get_name() const {
+    node_type get_type() const noexcept override {
+        return node_type::MULTIPLY;
+    }
+
+    const char* get_name([[maybe_unused]] bool for_graphviz) const {
         return "*";
     }
 };
@@ -323,8 +503,12 @@ public:
 class divide_node final: public arithmetic_and_comparative_operator<divide_node, std::divides<int64_t>> {
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
-        
-    const char* get_name() const {
+
+    node_type get_type() const noexcept override {
+        return node_type::DIVIDE;
+    }
+
+    const char* get_name([[maybe_unused]] bool for_graphviz) const {
         return "/";
     }
 };
@@ -332,8 +516,12 @@ public:
 class equal_node final: public arithmetic_and_comparative_operator<equal_node, std::equal_to<int64_t>> {
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
-            
-    const char* get_name() const {
+
+    node_type get_type() const noexcept override {
+        return node_type::EQUAL;
+    }
+
+    const char* get_name([[maybe_unused]] bool for_graphviz) const {
         return "==";
     }
 };
@@ -341,8 +529,15 @@ public:
 class less_node final: public arithmetic_and_comparative_operator<less_node, std::less<int64_t>> {
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
-                
-    const char* get_name() const {
+
+    node_type get_type() const noexcept override {
+        return node_type::LESS;
+    }
+
+    const char* get_name(bool for_graphviz) const {
+        if(!for_graphviz) {
+            return "<";
+        }
         return "&lt;";
     }
 };
@@ -351,27 +546,48 @@ class bigger_node final: public arithmetic_and_comparative_operator<bigger_node,
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
 
-    const char* get_name() const {
+    node_type get_type() const noexcept override {
+        return node_type::BIGGER;
+    }
+
+    const char* get_name(bool for_graphviz) const {
+        if(!for_graphviz) {
+            return ">";
+        }
         return "&gt;";
     }
 };
 
-class less_or_equal_node final: public arithmetic_and_comparative_operator<less_or_equal_node, 
+class less_or_equal_node final: public arithmetic_and_comparative_operator<less_or_equal_node,
                                                                            std::less_equal<int64_t>> {
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
-    
-    const char* get_name() const {
+
+    node_type get_type() const noexcept override {
+        return node_type::LESSEQUAL;
+    }
+
+    const char* get_name(bool for_graphviz) const {
+        if(!for_graphviz) {
+            return "<=";
+        }
         return "&le;";
     }
 };
 
-class bigger_or_equal_node final: public arithmetic_and_comparative_operator<bigger_or_equal_node, 
+class bigger_or_equal_node final: public arithmetic_and_comparative_operator<bigger_or_equal_node,
                                                                              std::greater_equal<int64_t>> {
 public:
     using arithmetic_and_comparative_operator::arithmetic_and_comparative_operator;
-        
-    const char* get_name() const {
+
+    node_type get_type() const noexcept override {
+        return node_type::BIGGEREQUAL;
+    }
+
+    const char* get_name(bool for_graphviz) const {
+        if(!for_graphviz) {
+            return ">=";
+        }
         return "&ge;";
     }
 };
@@ -383,6 +599,13 @@ public:
     explicit conditional_operation_node(std::unique_ptr<node> condition,
                                         std::vector<std::unique_ptr<node>> scope):
         condition_(std::move(condition)), scope_(std::move(scope)) {}
+
+    node_type get_type() const noexcept override {
+        if constexpr (is_loop) {
+            return node_type::WHILE;
+        }
+        return node_type::IF;
+    }
 
     int64_t execute(context &ctx) override {
         while (get_value(condition_->execute(ctx)) != 0) {
@@ -397,7 +620,21 @@ public:
     }
 
     std::string get_name() const {
-        return is_loop ? "while" : "if";
+        if constexpr (is_loop) {
+            return "while";
+        }
+        return "if";
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        ostr << get_name() << "(";
+        condition_->to_program(ostr);
+        ostr << ")\n{\n";
+        for (const auto& i: scope_) {
+            i->to_program(ostr);
+            ostr << "\n";
+        }
+        ostr << "}\n";
     }
 
     void dump(std::ostream &ostr) const override {
@@ -413,7 +650,7 @@ public:
     }
 
     void dump_gv(graphviz &graph, node_proxy& parent) const override {
-        std::string label = is_loop ? "while" : "if";
+        std::string label = get_name();
         auto node = graph.insert_node(graphviz_formatter::conditional, label);
         parent.connect(graphviz_formatter::default_edge, node);
 
@@ -434,11 +671,19 @@ using while_node = conditional_operation_node<true>;
 
 class scan_node final: public node {
 public:
+    node_type get_type() const noexcept override {
+        return node_type::SCAN;
+    }
+
     int64_t execute([[maybe_unused]] context &ctx) override {
         int64_t value;
         std::cout << "Input: ";
         std::cin >> value;
         return create_value(value);
+    }
+
+    virtual void to_program(std::ostream &ostr) const override {
+        ostr << "?";
     }
 
     void dump(std::ostream &ostr) const override {

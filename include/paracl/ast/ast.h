@@ -21,6 +21,13 @@ public:
         }
     }
 
+    void to_program(std::ostream &ostr= std::cout) const {
+        for (const auto& i : scope_) {
+            i->to_program(ostr);
+            ostr << "\n";
+        }
+    }
+
     void dump(std::ostream &ostr= std::cout) const {
         ostr << "main( ";
         for (const auto& i : scope_) {

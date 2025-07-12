@@ -27,7 +27,7 @@ public:
 
         explicit node(std::string label) noexcept:
             label_(std::move(label)), formatting_() {}
-        explicit node(std::string label, graphviz_formatting formatting) noexcept: 
+        explicit node(std::string label, graphviz_formatting formatting) noexcept:
             label_(std::move(label)), formatting_(formatting) {}
     };
 

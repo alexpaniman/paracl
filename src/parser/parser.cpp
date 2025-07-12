@@ -95,7 +95,7 @@ std::unique_ptr<node> parser::parse_expression(int min_precedence) {
     return left;
 }
 
-std::unique_ptr<node> parser::parse_id_or_num(bool create_variable) {
+std::unique_ptr<node> parser::parse_id_or_num(/*bool create_variable*/) {
     token current_token = eat_token();
 
     if (current_token.type == token_type::LEFT_PARENTHESIS) {
@@ -116,9 +116,9 @@ std::unique_ptr<node> parser::parse_id_or_num(bool create_variable) {
         case token_type::ID: {
             std::string id_name{current_token.id.data(), current_token.id.size()};
 
-            if (!create_variable && !context_.check_var_existing(id_name)) {
+            //if (!create_variable && !context_.check_var_existing(id_name)) {
                 //обработка
-            }
+            //}
 
             context_.create_variable(id_name);
             std::unique_ptr<node> new_id_node = std::make_unique<id_node>(id_name);
@@ -170,11 +170,11 @@ std::unique_ptr<node> parser::parse_assing_operation() {
         //добавить обработку ошибки
     }
     switch(next_token().type) {
-        case token_type::ASSIGN:           return parse_binary_operation<assign_node>(true);
-        case token_type::PLUS_ASSIGN:      return parse_binary_operation<plus_assign_node>(true);
-        case token_type::MINUS_ASSIGN:     return parse_binary_operation<minus_assign_node>(true);
-        case token_type::MULTIPLY_ASSIGN:  return parse_binary_operation<multiply_assign_node>(true);
-        case token_type::DIVIDE_ASSIGN:    return parse_binary_operation<divide_assign_node>(true);
+        case token_type::ASSIGN:           return parse_binary_operation<assign_node>(/*true*/);
+        case token_type::PLUS_ASSIGN:      return parse_binary_operation<plus_assign_node>(/*true*/);
+        case token_type::MINUS_ASSIGN:     return parse_binary_operation<minus_assign_node>(/*true*/);
+        case token_type::MULTIPLY_ASSIGN:  return parse_binary_operation<multiply_assign_node>(/*true*/);
+        case token_type::DIVIDE_ASSIGN:    return parse_binary_operation<divide_assign_node>(/*true*/);
         case token_type::LEFT_PARENTHESIS: return parse_function();
         default:                           return nullptr;  //добавить обработку ошибки
     }
