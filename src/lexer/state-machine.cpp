@@ -22,6 +22,8 @@ uint8_t S30[CHAR_COUNT] = {
     ['i'] = 2, // id or if
     ['w'] = 4, // id or while
 
+    [0xd6] = 33, // id (two-byte sequence)
+
     ['0'...'9'] = 9, // number
 
     ['='] = 10, // assign or equal
@@ -66,6 +68,8 @@ uint8_t S1[CHAR_COUNT] = {
     ['a'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
+
+    [0xd6] = 33, // id (two-byte sequence)
 };
 
 uint8_t S2[CHAR_COUNT] = {
@@ -79,6 +83,8 @@ uint8_t S2[CHAR_COUNT] = {
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
+    [0xd6] = 33, // id (two-byte sequence)
+
     ['f'] = 3, // if
 };
 
@@ -89,6 +95,8 @@ uint8_t S3[CHAR_COUNT] = {
     ['a'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
+
+    [0xd6] = 33, // id (two-byte sequence)
 };
 
 uint8_t S4[CHAR_COUNT] = {
@@ -101,6 +109,8 @@ uint8_t S4[CHAR_COUNT] = {
 
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
+
+    [0xd6] = 33, // id (two-byte sequence)
 
     ['h'] = 5, // while
 };
@@ -116,6 +126,8 @@ uint8_t S5[CHAR_COUNT] = {
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
+    [0xd6] = 33, // id (two-byte sequence)
+
     ['i'] = 6, // while
 };
 
@@ -129,6 +141,8 @@ uint8_t S6[CHAR_COUNT] = {
 
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
+
+    [0xd6] = 33, // id (two-byte sequence)
 
     ['l'] = 7, // while
 };
@@ -144,6 +158,8 @@ uint8_t S7[CHAR_COUNT] = {
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
 
+    [0xd6] = 33, // id (two-byte sequence)
+
     ['e'] = 8, // while
 };
 
@@ -154,6 +170,8 @@ uint8_t S8[CHAR_COUNT] = {
     ['a'...'z'] = 1, // id
     ['0'...'9'] = 1, // id
     ['_'] = 1, // id
+
+    [0xd6] = 33, // id (two-byte sequence)
 };
 
 uint8_t S9[CHAR_COUNT] = {
@@ -252,6 +270,11 @@ uint8_t S32[CHAR_COUNT] = {
     // terminal comma
 };
 
+uint8_t S33[CHAR_COUNT] = {
+    // first byte of armenian dram
+    [0x8f] = 1, // id
+};
+
 generic_lexer::state lexer_states[] = {
     [0]  = { nullptr,  /*is_terminal=*/false,                                 },
     [1]  = { S1,       /*is_terminal=*/ true, token_type::ID                  },
@@ -286,6 +309,7 @@ generic_lexer::state lexer_states[] = {
     [30] = { S30,      /*is_terminal=*/false,                                 },
     [31] = { S31,      /*is_terminal=*/ true, token_type::NONE                },
     [32] = { S32,      /*is_terminal=*/ true, token_type::COMMA               },
+    [33] = { S33,      /*is_terminal=*/false,                                 },
 };
 
 #pragma clang diagnostic pop

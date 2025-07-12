@@ -304,5 +304,36 @@ TEST_CASE("tokenize basic input") {
         IS_SAME(tokens[27], "SEMICOLON");
         IS_SAME(tokens[28], "RIGHT_CURLY_BRACKET");
     }
+
+    SECTION("armenian dram support in identifiers") {
+        std::string input = R"(
+            ֏he֏ll
+            ֏while
+            w֏hile
+            wh֏ile
+            whi֏le
+            whil֏e
+            while֏
+            ֏if
+            i֏f
+            if֏
+            identifier֏
+        )";
+
+        auto tokens = tokenize(input);
+        REQUIRE(tokens.size() == 11);
+
+        IS_SAME(tokens[0], "ID{֏he֏ll}");
+        IS_SAME(tokens[1], "ID{֏while}");
+        IS_SAME(tokens[2], "ID{w֏hile}");
+        IS_SAME(tokens[3], "ID{wh֏ile}");
+        IS_SAME(tokens[4], "ID{whi֏le}");
+        IS_SAME(tokens[5], "ID{whil֏e}");
+        IS_SAME(tokens[6], "ID{while֏}");
+        IS_SAME(tokens[7], "ID{֏if}");
+        IS_SAME(tokens[8], "ID{i֏f}");
+        IS_SAME(tokens[9], "ID{if֏}");
+        IS_SAME(tokens[10], "ID{identifier֏}");
+    }
 }
 

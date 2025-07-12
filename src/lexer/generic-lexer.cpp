@@ -1,7 +1,10 @@
 #include "paracl/lexer/generic-lexer.h"
 
 #include <cassert>
+#include <cstdint>
+#include <fstream>
 #include <stdexcept>
+#include <iostream>
 
 
 namespace paracl {
@@ -53,7 +56,7 @@ auto generic_lexer::tokenize_next() -> std::optional<token> {
     while (iter_ != end_) {
         const state::id *transitions = states_[current_state_id_].transitions;
 
-        state::id next_state_id = transitions[static_cast<int>(*iter_)];
+        state::id next_state_id = transitions[static_cast<uint8_t>(*iter_)];
         state next_state = states_[next_state_id];
 
         if (!next_state.transitions) {
