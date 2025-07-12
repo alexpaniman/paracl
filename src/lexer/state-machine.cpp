@@ -44,6 +44,8 @@ uint8_t S30[CHAR_COUNT] = {
     ['{'] = 21, // left curly bracket
     ['}'] = 22, // right curly bracket
 
+    [','] = 32, // comma
+
     [' '] = 31, // space (skipped)
     ['\t'] = 31, // tab (skipped)
     ['\n'] = 31, // line feed (skipped)
@@ -246,6 +248,10 @@ uint8_t S29[CHAR_COUNT] = {
     // terminal bigger or equal
 };
 
+uint8_t S32[CHAR_COUNT] = {
+    // terminal comma
+};
+
 generic_lexer::state lexer_states[] = {
     [0]  = { nullptr,  /*is_terminal=*/false,                                 },
     [1]  = { S1,       /*is_terminal=*/ true, token_type::ID                  },
@@ -279,6 +285,7 @@ generic_lexer::state lexer_states[] = {
     [29] = { S29,      /*is_terminal=*/ true, token_type::BIGGER_OR_EQUAL     },
     [30] = { S30,      /*is_terminal=*/false,                                 },
     [31] = { S31,      /*is_terminal=*/ true, token_type::NONE                },
+    [32] = { S32,      /*is_terminal=*/ true, token_type::COMMA               },
 };
 
 #pragma clang diagnostic pop

@@ -41,6 +41,7 @@ const char* get_token_type_name(token_type type) {
     case token_type::SCAN:                return "SCAN";
 
     case token_type::SEMICOLON:           return "SEMICOLON";
+    case token_type::COMMA:               return "COMMA";
     }
 }
 

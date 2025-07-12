@@ -262,5 +262,47 @@ TEST_CASE("tokenize basic input") {
         IS_SAME(tokens[27], "ID{WHILEANI}");
         IS_SAME(tokens[28], "ID{WHILESANI}");
     }
+
+    SECTION("commas") {
+        std::string input = R"(
+            if (add(17, 23) == 8) {
+                print(ani, sasha);
+                int x = 0, y = 1;
+            }
+        )";
+
+        auto tokens = tokenize(input);
+        REQUIRE(tokens.size() == 29);
+
+        IS_SAME(tokens[0], "IF");
+        IS_SAME(tokens[1], "LEFT_PARENTHESIS");
+        IS_SAME(tokens[2], "ID{add}");
+        IS_SAME(tokens[3], "LEFT_PARENTHESIS");
+        IS_SAME(tokens[4], "NUMBER{17}");
+        IS_SAME(tokens[5], "COMMA");
+        IS_SAME(tokens[6], "NUMBER{23}");
+        IS_SAME(tokens[7], "RIGHT_PARENTHESIS");
+        IS_SAME(tokens[8], "EQUAL");
+        IS_SAME(tokens[9], "NUMBER{8}");
+        IS_SAME(tokens[10], "RIGHT_PARENTHESIS");
+        IS_SAME(tokens[11], "LEFT_CURLY_BRACKET");
+        IS_SAME(tokens[12], "ID{print}");
+        IS_SAME(tokens[13], "LEFT_PARENTHESIS");
+        IS_SAME(tokens[14], "ID{ani}");
+        IS_SAME(tokens[15], "COMMA");
+        IS_SAME(tokens[16], "ID{sasha}");
+        IS_SAME(tokens[17], "RIGHT_PARENTHESIS");
+        IS_SAME(tokens[18], "SEMICOLON");
+        IS_SAME(tokens[19], "ID{int}");
+        IS_SAME(tokens[20], "ID{x}");
+        IS_SAME(tokens[21], "ASSIGN");
+        IS_SAME(tokens[22], "NUMBER{0}");
+        IS_SAME(tokens[23], "COMMA");
+        IS_SAME(tokens[24], "ID{y}");
+        IS_SAME(tokens[25], "ASSIGN");
+        IS_SAME(tokens[26], "NUMBER{1}");
+        IS_SAME(tokens[27], "SEMICOLON");
+        IS_SAME(tokens[28], "RIGHT_CURLY_BRACKET");
+    }
 }
 

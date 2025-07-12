@@ -41,6 +41,7 @@ enum class token_type: generic_lexer::token_type {
 
     SCAN,
 
+    COMMA,
     SEMICOLON
 };
 
