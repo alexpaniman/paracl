@@ -21,8 +21,9 @@ public:
         data value;
     };
 
-    text_overlays(std::vector<overlay> overlays):
-        overlays_(std::move(overlays)) {
+    text_overlays(std::vector<overlay> overlays, std::span<char> text):
+        overlays_(std::move(overlays)),
+        text_(text) {
 
         // TODO: hide this under assert somehow
         verify();
@@ -31,23 +32,29 @@ public:
     /// Create new paracl::text_overlays, preserving just overlays inside the provided span.
     /// Time complexity: O(M + log N), where N is number of overlays in current text_overlays
     /// and M is number of overlays in resulting text_overlays.
-    text_overlays subspan(index_span<uint32_t> span) {
+    text_overlays subspan(index_span<uint32_t> span) const {
         auto lower = get_lower_bound_overlay(span.begin);
         auto upper = get_lower_bound_overlay(span.end);
 
         std::vector<overlay> range_overlays;
-        range_overlays.resize(upper - lower);
+        range_overlays.reserve(upper - lower);
 
         for (auto it = lower; it != upper; ++it) {
             index_span<uint32_t> adjusted{it->span.begin - span.begin, it->span.end - span.begin};
             range_overlays.emplace_back(adjusted, it->value);
         }
-        
-        return text_overlays{std::move(range_overlays)};
+
+        return text_overlays {
+          std::move(range_overlays),
+          {
+            text_.begin() + span.begin,
+            text_.begin() + span.end
+          }
+        };
     }
 
     /// Time complexity: O(log N)
-    std::optional<overlay> get_overlay_at_point(uint32_t point) {
+    std::optional<overlay> get_overlay_at_point(uint32_t point) const {
         auto it = get_lower_bound_overlay(point);
 
         if (it == overlays_.end() || !it->span.contains(point))
@@ -119,12 +126,21 @@ public:
         // begin, end =                 first> ------ -- --- ------- <last
     }
 
+    const std::vector<overlay> &get_overlays() const { return overlays_; }
+
 private:
     std::vector<overlay> overlays_;
     std::span<char> text_;
 
     std::vector<overlay>::iterator get_lower_bound_overlay(uint32_t point) {
-        auto lower_compare = [](const overlay& lhs, uint32_t rhs) { return lhs.span.begin < rhs; };
+        auto lower_compare = [](const overlay& lhs, uint32_t rhs) { return lhs.span.end <= rhs; };
+        auto lower = std::lower_bound(overlays_.begin(), overlays_.end(), point, lower_compare);
+
+        return lower;
+    }
+
+    auto get_lower_bound_overlay(uint32_t point) const {
+        auto lower_compare = [](const overlay& lhs, uint32_t rhs) { return lhs.span.end <= rhs; };
         auto lower = std::lower_bound(overlays_.begin(), overlays_.end(), point, lower_compare);
 
         return lower;
@@ -141,6 +157,9 @@ private:
             // overlays don't exceed underlying text
             assert(overlay.span.end <= text_.size());
         }
+
+        if (overlays_.size() == 0)
+            return;
 
         auto prev = overlays_.begin();
         for (auto end = overlays_.end(), i = ++ overlays_.begin(); i != end; prev = i, ++ i) {
