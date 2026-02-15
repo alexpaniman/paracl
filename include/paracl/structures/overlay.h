@@ -11,13 +11,9 @@
 
 namespace paracl {
 
-struct data {
-    int32_t value;
-};
-
-
 /// Stores non-owning text span along with overlays to that text with arbitrary data.
 /// Overlays can never intersect.
+template <typename data>
 struct text_overlays {
 public:
     struct overlay {
@@ -158,10 +154,7 @@ private:
             assert(prev->span.end <= i->span.begin);
         }
     }
-
-
 };
-
 
 } // end namespace paracl
 

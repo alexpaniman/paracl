@@ -41,8 +41,8 @@ std::vector<token> tokenize(std::span<char> input) {
     }
 
     std::optional<colored_text> error_report = lexer.make_error_report();
-    if (error_report)
-        error_report->print();
+    // TODO: if (error_report)
+    // TODO:     error_report->print();
 
     return tokens;
 }
